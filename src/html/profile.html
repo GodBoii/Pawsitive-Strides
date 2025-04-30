@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Pawsitive Strides</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <!-- External CSS -->
+    <link rel="stylesheet" href="../css/styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- Inline script to define initMap globally and handle API readiness -->
+    <script>
+        // Global flag to track API readiness
+        window.googleMapsApiReady = false;
+        // Queue for functions that need the API
+        window.googleMapsApiCallbacks = [];
+
+        // This is the *only* global initMap. Google calls this.
+        function initMap() {
+          console.log(">>> Global initMap START (HTML)"); // Log start
+          window.googleMapsApiReady = true;
+          console.log("    googleMapsApiReady set to true."); // Log flag set
+          console.log(`    Callback queue length: ${window.googleMapsApiCallbacks.length}`); // Log queue length
+
+          // Execute any queued functions
+          while (window.googleMapsApiCallbacks.length > 0) {
+            const callback = window.googleMapsApiCallbacks.shift(); // Get callback
+            // Check if callback is actually a function before calling
+            if (typeof callback === 'function') {
+                 const callbackName = callback.name || 'anonymous';
+                 console.log(`    >>> Attempting to execute queued callback: ${callbackName}`); // Log execution attempt
+                 try {
+                    callback(); // Execute it
+                    console.log(`    <<< Successfully executed queued callback: ${callbackName}`); // Log success
+                 } catch (error) {
+                    console.error(`    !!! Error executing queued Maps API callback (${callbackName}):`, error); // Log error during execution
+                 }
+            } else {
+                 console.warn("    Dequeued item was not a function:", callback);
+            }
+          }
+          console.log("<<< Global initMap END (HTML)"); // Log end
+        }
+
+        // Helper function for other scripts to use
+        function whenGoogleMapsReady(callback) {
+            if (typeof callback !== 'function') {
+                 console.warn("Attempted to queue non-function with whenGoogleMapsReady:", callback);
+                 return;
+            }
+            const callbackName = callback.name || 'anonymous'; // Get function name for logging
+            if (window.googleMapsApiReady) {
+                console.log(`>>> API ready now, executing callback immediately: ${callbackName}`);
+                try { callback(); } catch(e) { console.error(`!!! Error in immediate Maps callback (${callbackName}):`, e); }
+            } else {
+                console.log(`>>> API not ready, queuing callback: ${callbackName}`);
+                window.googleMapsApiCallbacks.push(callback);
+            }
+        }
+    </script>
+
+    <!-- Google Maps API Script - Ensure key is correct, calls the global initMap above -->
+    <!-- Keep async defer -->
+    <script async defer
+        src="https://maps.googleapis.com/maps/api/js?key=AIzaSyBUT6MzyRpMSs7Xq1PzkRtW3qSlouTAqGw&callback=initMap&libraries=marker,geometry,places&v=beta">
+    </script>
+
+    <!-- Your other scripts - Defer ensures they run after HTML parsing -->
+    <script src="../js/common.js" defer></script>
+    <script src="../js/profile.js" defer></script> <!-- Runs after common.js -->
+
+
+    <style>
+        /* Basic styles */
+        .sidebar-link { display: block; padding: 0.75rem 1rem; border-radius: 0.375rem; transition: background-color 0.2s ease-in-out; cursor: pointer; }
+        .sidebar-link:hover { background-color: #f3e8ff; color: #6b21a8; }
+        .sidebar-link.active { background-color: #8B5CF6; color: white; font-weight: 500; }
+        .content-section { display: none; }
+        .content-section.active { display: block; }
+        .input-field { border: 1px solid #d1d5db; border-radius: 0.375rem; padding: 0.5rem 0.75rem; width: 100%; }
+        select.input-field { appearance: none; background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); background-position: right 0.5rem center; background-repeat: no-repeat; background-size: 1.5em 1.5em; padding-right: 2.5rem; }
+        textarea.input-field { min-height: 6rem; }
+
+        /* Map view styles */
+        #map-container { height: 600px; width: 100%; border-radius: 0.5rem; border: 1px solid #e5e7eb; background-color: #f9fafb; display: flex; align-items: center; justify-content: center; position: relative; /* Needed for message positioning */ }
+        .map-loading-message { /* Style for the loading/status message */
+             padding: 1rem; text-align: center; color: #4b5563; background-color: rgba(249, 250, 251, 0.8); border-radius: 0.375rem; }
+
+
+        /* Dog card styles */
+        .dog-card { border: 1px solid #e5e7eb; border-radius: 0.5rem; padding: 1rem; margin-bottom: 1rem; background-color: white; }
+        .dog-card h4 { font-size: 1.1rem; font-weight: bold; margin-bottom: 0.5rem; }
+
+        /* Style for Google Places Autocomplete dropdown */
+        .pac-container { z-index: 1050 !important; /* Ensure dropdown is above other elements */ }
+
+        /* Styles for the Location Picker Map */
+        #picker-map-container {
+            height: 350px; /* Adjust height as needed */
+            width: 100%;
+            border-radius: 0.5rem;
+            border: 1px solid #d1d5db;
+            margin-top: 1rem; /* Spacing */
+        }
+        .hidden { display: none; } /* Utility class */
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen font-sans">
+    <!-- Header -->
+     <header class="bg-white py-4 px-6 shadow-sm sticky top-0 z-10">
+         <div class="max-w-7xl mx-auto flex justify-between items-center">
+             <div class="flex items-center">
+                 <a href="index.html" class="flex items-center">
+                     <img src="../../image/logo.svg" alt="Pawsitive Strides" class="w-10 h-10 mr-3">
+                     <span class="text-lg font-bold text-purple-800">Pawsitive Strides</span>
+                 </a>
+             </div>
+             <div id="auth-links" class="flex items-center space-x-4">
+                 <span id="user-email" class="text-gray-600 text-sm"></span>
+                 <button id="logout-button" class="text-gray-700 hover:text-purple-600 font-medium border border-gray-200 rounded-full px-6 py-2 text-sm">Log Out</button>
+             </div>
+         </div>
+     </header>
+
+    <div class="container mx-auto px-4 py-8">
+        <div class="flex flex-wrap md:flex-nowrap md:space-x-8">
+            <!-- Sidebar -->
+            <aside class="w-full md:w-1/4 lg:w-1/5 mb-6 md:mb-0">
+                <nav class="bg-white p-4 rounded-lg shadow-md border border-gray-200">
+                    <ul class="space-y-2">
+                        <li><a data-section="profile-section" class="sidebar-link active">Profile</a></li>
+                        <li><a data-section="map-section" class="sidebar-link">Map View</a></li>
+                        <li><a data-section="requests-section" class="sidebar-link">Requests <span class="text-xs bg-yellow-200 text-yellow-800 px-1.5 py-0.5 rounded-full ml-1">Soon</span></a></li>
+                    </ul>
+                </nav>
+            </aside>
+
+            <!-- Main Content Area -->
+            <main id="main-content" class="w-full md:w-3/4 lg:w-4/5">
+                <div id="loading-state" class="text-center py-10">
+                    <p class="text-gray-600">Loading dashboard...</p>
+                </div>
+                <div id="profile-load-error" class="hidden text-center py-6 px-4 mb-4 bg-red-100 text-red-700 rounded-lg border border-red-300">
+                    Could not load profile data. Please try again later or contact support.
+                </div>
+
+                <!-- Profile Section -->
+                <section id="profile-section" class="content-section active">
+                    <h1 class="text-2xl font-bold text-gray-800 mb-6">Your Profile</h1>
+                     <div class="bg-white p-6 rounded-lg shadow-md mb-8 border border-gray-200">
+                        <h2 class="text-xl font-semibold mb-4">Basic Information</h2>
+                        <form id="profile-form" class="space-y-4">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div>
+                                    <label for="profile-name" class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                                    <input type="text" id="profile-name" name="full_name" class="input-field focus:ring-2 focus:ring-purple-500 focus:border-transparent" required>
+                                </div>
+                                <div>
+                                    <label for="profile-email" class="block text-sm font-medium text-gray-700 mb-1">Email</label>
+                                    <input type="email" id="profile-email" name="email" class="input-field bg-gray-100" disabled>
+                                </div>
+                                <div>
+                                    <label for="profile-mobile" class="block text-sm font-medium text-gray-700 mb-1">Mobile</label>
+                                    <input type="tel" id="profile-mobile" name="mobile" pattern="[6-9][0-9]{9}" class="input-field focus:ring-2 focus:ring-purple-500 focus:border-transparent" required>
+                                </div>
+                                <div>
+                                    <label for="profile-address" class="block text-sm font-medium text-gray-700 mb-1">Address</label>
+                                    <input type="text" id="profile-address" name="address" placeholder="Start typing or pin location on map" class="input-field focus:ring-2 focus:ring-purple-500 focus:border-transparent" required>
+                                    <button type="button" id="pin-location-btn" class="mt-2 text-sm text-purple-600 hover:underline focus:outline-none">
+                                        Pin Location on Map
+                                    </button>
+                                    <div id="reverse-geocode-result" class="text-xs text-gray-500 mt-1 italic h-4"></div> <!-- Added fixed height -->
+                                </div>
+                            </div>
+
+                            <!-- Location Picker Map Container (Initially Hidden) -->
+                            <div id="picker-map-container" class="hidden">
+                                <!-- Map will be initialized here by JS -->
+                                <p class="text-center text-gray-500 p-4">Loading map picker...</p>
+                            </div>
+
+                            <div class="pt-2">
+                                <button type="submit" class="bg-purple-600 text-white hover:bg-purple-700 font-medium rounded-lg px-6 py-2 transition update-profile-btn">
+                                    Update Basic Info
+                                </button>
+                                <span class="profile-message ml-4 text-sm"></span>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Owner Specific Content (Dogs) -->
+                     <div id="owner-profile-content" class="hidden">
+                        <div class="bg-white p-6 rounded-lg shadow-md mb-8 border border-gray-200">
+                             <h2 class="text-xl font-semibold mb-4">Your Dogs</h2>
+                             <div id="dog-list" class="mb-6">
+                                <p id="no-dogs-message" class="text-gray-500">You haven't added any dogs yet.</p>
+                                <!-- Dog cards will be inserted here -->
+                            </div>
+                             <hr class="my-6 border-gray-200">
+                             <h3 class="text-lg font-medium mb-3">Add a New Dog</h3>
+                             <form id="add-dog-form" class="space-y-4">
+                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                     <div>
+                                         <label for="dog-name" class="block text-sm font-medium text-gray-700 mb-1">Dog's Name</label>
+                                         <input type="text" id="dog-name" name="name" class="input-field focus:ring-2 focus:ring-purple-500 focus:border-transparent" required>
+                                     </div>
+                                     <div>
+                                         <label for="dog-breed" class="block text-sm font-medium text-gray-700 mb-1">Breed</label>
+                                         <input type="text" id="dog-breed" name="breed" class="input-field focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                     </div>
+                                     <div>
+                                         <label for="dog-age" class="block text-sm font-medium text-gray-700 mb-1">Age (Years)</label>
+                                         <input type="number" id="dog-age" name="age" min="0" class="input-field focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                     </div>
+                                     <div>
+                                         <label for="dog-gender" class="block text-sm font-medium text-gray-700 mb-1">Gender</label>
+                                         <select id="dog-gender" name="gender" class="input-field focus:ring-2 focus:ring-purple-500 focus:border-transparent">
+                                             <option value="">Select</option>
+                                             <option value="Male">Male</option>
+                                             <option value="Female">Female</option>
+                                         </select>
+                                     </div>
+                                 </div>
+                                 <div>
+                                     <label for="dog-special-needs" class="block text-sm font-medium text-gray-700 mb-1">Special Needs / Medical Conditions</label>
+                                     <textarea id="dog-special-needs" name="special_needs" rows="3" class="input-field focus:ring-2 focus:ring-purple-500 focus:border-transparent"></textarea>
+                                 </div>
+                                 <button type="submit" class="bg-green-500 text-white hover:bg-green-600 font-medium rounded-lg px-6 py-2 transition add-dog-btn">
+                                     Add Dog
+                                 </button>
+                                 <span class="dog-message ml-4 text-sm"></span>
+                             </form>
+                         </div>
+                     </div>
+
+                    <!-- Walker Specific Content -->
+                     <div id="walker-profile-content" class="hidden">
+                         <div class="bg-white p-6 rounded-lg shadow-md mb-8 border border-gray-200">
+                             <h2 class="text-xl font-semibold mb-4">Walker Details</h2>
+                             <form id="walker-details-form" class="space-y-4">
+                                 <input type="hidden" id="walker-profile-loaded" value="false">
+                                 <div>
+                                     <label for="walker-age" class="block text-sm font-medium text-gray-700 mb-1">Age</label>
+                                     <input type="number" id="walker-age" name="age" class="input-field bg-gray-100" disabled>
+                                     <!-- Add other walker-specific fields here -->
+                                 </div>
+                                 <p class="text-sm text-gray-500">Additional walker fields can be added here.</p>
+                                 <button type="submit" class="bg-blue-500 text-white hover:bg-blue-600 font-medium rounded-lg px-6 py-2 transition update-walker-btn">
+                                     Update Walker Details
+                                 </button>
+                                 <span class="walker-message ml-4 text-sm"></span>
+                             </form>
+                         </div>
+                     </div>
+                </section>
+
+                <!-- Map Section (For Viewing Nearby Users) -->
+                 <section id="map-section" class="content-section">
+                     <h1 class="text-2xl font-bold text-gray-800 mb-4">Nearby <span id="map-title-role">Users</span></h1>
+                     <p class="text-sm text-gray-600 mb-4">
+                         Showing your location (based on profile address) and locations of nearby <span id="map-description-role">users</span>.
+                         <span class="text-purple-700 block mt-1">Ensure your address is updated in the 'Profile' section to see your location here.</span>
+                         <span class="text-red-600 italic block mt-1">Note: Only users with verified locations will appear.</span> <!-- Updated Note -->
+                    </p>
+                     <div id="map-container">
+                         <!-- ****** Loading Message IS HERE ****** -->
+                         <p class="map-loading-message">Map loading...</p>
+                         <!-- ****** Map canvas will replace this message ****** -->
+                     </div>
+                 </section>
+
+                <!-- Requests Section -->
+                <section id="requests-section" class="content-section">
+                     <h1 class="text-2xl font-bold text-gray-800 mb-4">Your Requests</h1>
+                     <div class="bg-white p-6 rounded-lg shadow-md border border-gray-200">
+                         <p class="text-gray-600">Booking requests management will be available here soon.</p>
+                     </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <footer class="mt-12 text-center text-gray-500 text-sm py-6">
+        <p>© 2024 Pawsitive Strides. All rights reserved.</p>
+    </footer>
+</body>
+</html>

@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sign Up - Pawsitive Strides</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <!-- External CSS -->
+    <link rel="stylesheet" href="../css/styles.css">
+    <!-- ADD Supabase JS Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Common JS and Signup JS -->
+    <script src="../js/common.js"></script>
+    <script src="../js/signup.js"></script>
+    <style>
+        .fade-enter-active, .fade-leave-active { transition: opacity 0.5s ease; }
+        .fade-enter, .fade-leave-to { opacity: 0; }
+    </style>
+</head>
+<body class="bg-gray-100 min-h-screen font-sans">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header/Navigation -->
+        <header class="bg-white py-4 px-6 shadow-sm mb-8">
+            <div class="max-w-7xl mx-auto flex justify-between items-center">
+                <div class="flex items-center">
+                    <a href="index.html" class="flex items-center">
+                        <img src="../../image/logo.svg" alt="Pawsitive Strides" class="w-10 h-10 mr-3">
+                        <span class="text-lg font-bold text-purple-800">Pawsitive Strides</span>
+                    </a>
+                </div>
+                <nav class="hidden md:flex items-center space-x-8">
+                    <a href="index.html#how-it-works" class="text-gray-600 hover:text-purple-600 font-medium flex items-center">How It Works <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg></a>
+                    <a href="signup.html" class="text-gray-600 hover:text-purple-600 font-medium">Find a Walker</a>
+                    <a href="index.html#about-us" class="text-gray-600 hover:text-purple-600 font-medium">About Us</a>
+                    <a href="contact.html" class="text-gray-600 hover:text-purple-600 font-medium">Contact</a>
+                </nav>
+                <div class="flex items-center space-x-4">
+                    <a href="login.html" class="text-gray-700 hover:text-purple-600 font-medium border border-gray-200 rounded-full px-6 py-2">Log In</a>
+                    <a href="signup.html" class="bg-purple-500 text-white hover:bg-purple-600 font-medium rounded-full px-6 py-2">Sign Up</a>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <!-- Step 1: Plan Selection -->
+            <section id="plan-selection" class="max-w-4xl mx-auto transition duration-500 ease-in-out">
+                 <div class="text-center mb-10">
+                    <h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-4">Join Pawsitive Strides</h1>
+                    <p class="text-lg text-gray-600">First, tell us who you are and choose your starting plan.</p>
+                </div>
+                <div class="grid md:grid-cols-3 gap-6">
+                    <!-- Pet Owner - Monthly -->
+                    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200 flex flex-col">
+                        <div class="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-xs font-medium inline-block mb-4 self-start">Pet Owner</div>
+                        <h3 class="text-xl font-bold mb-1">Monthly Access</h3>
+                        <div class="flex items-baseline mb-4"> <span class="text-3xl font-bold">₹199</span> <span class="text-gray-500 ml-1.5">/month</span> </div>
+                        <p class="text-gray-600 text-sm mb-6 flex-grow">Access verified walkers, manage dog profiles, and book walks anytime.</p>
+                        <button data-plan="owner_monthly" data-role="owner" class="select-plan-btn mt-auto w-full py-2 px-4 bg-purple-500 text-white font-medium rounded-lg hover:bg-purple-600 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition">
+                            Choose Monthly
+                        </button>
+                    </div>
+                    <!-- Pet Owner - Annual -->
+                    <div class="bg-purple-500 rounded-xl shadow-lg p-6 border border-purple-600 relative flex flex-col">
+                        <div class="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-purple-700 text-white px-3 py-0.5 rounded-full text-xs font-medium">Best Value</div>
+                        <div class="bg-white text-purple-800 px-3 py-1 rounded-full text-xs font-medium inline-block mb-4 self-start">Pet Owner</div>
+                        <h3 class="text-xl font-bold mb-1 text-white">Annual Access</h3>
+                        <div class="flex items-baseline mb-1"> <span class="text-3xl font-bold text-white">₹499</span> <span class="text-purple-200 ml-1.5">/year</span> </div>
+                        <div class="text-purple-200 text-sm mb-4">(Save over 75%!)</div>
+                        <p class="text-purple-100 text-sm mb-6 flex-grow">All monthly benefits plus priority support and exclusive discounts.</p>
+                        <button data-plan="owner_annual" data-role="owner" class="select-plan-btn mt-auto w-full py-2 px-4 bg-white text-purple-600 font-medium rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-white focus:ring-offset-2 focus:ring-offset-purple-500 transition">
+                            Choose Annual
+                        </button>
+                    </div>
+                    <!-- Dog Walker -->
+                    <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200 flex flex-col">
+                        <div class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-medium inline-block mb-4 self-start">Dog Walker</div>
+                        <h3 class="text-xl font-bold mb-1">Walker Access</h3>
+                        <div class="flex items-baseline mb-4"> <span class="text-3xl font-bold">₹19</span> <span class="text-gray-500 ml-1.5">/month</span> </div>
+                        <p class="text-gray-600 text-sm mb-6 flex-grow">Create your profile, get verified, find walking jobs, and start earning.</p>
+                        <button data-plan="walker_monthly" data-role="walker" class="select-plan-btn mt-auto w-full py-2 px-4 bg-green-500 text-white font-medium rounded-lg hover:bg-green-600 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition">
+                            Become a Walker
+                        </button>
+                    </div>
+                </div>
+                 <div class="text-center mt-8">
+                    <p class="text-gray-600 text-sm"> Already have an account? <a href="login.html" class="text-purple-600 hover:underline font-medium">Log in here</a> </p>
+                </div>
+            </section>
+
+            <!-- Step 2: Registration Form -->
+            <section id="registration-form-section" class="hidden max-w-lg mx-auto transition duration-500 ease-in-out">
+                 <div class="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200">
+                    <div class="p-8">
+                        <div class="text-center mb-6">
+                            <h1 id="registration-title" class="text-2xl font-bold text-gray-800">Create Your Account</h1>
+                            <p class="text-gray-600 mt-1">Complete the details below to get started.</p>
+                        </div>
+                        <form id="signup-form" class="space-y-5">
+                            <input type="hidden" id="selected-plan" name="plan">
+                            <input type="hidden" id="user-role" name="role">
+                            <div class="success-message hidden p-3 bg-green-100 text-green-700 rounded-lg text-sm mb-4"></div>
+                            <div class="error-message hidden p-3 bg-red-100 text-red-700 rounded-lg text-sm mb-4"></div>
+                            <div> <label for="name" class="block text-sm font-medium text-gray-700 mb-1">Full Name</label> <input type="text" id="name" name="name" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent" required> </div>
+                            <div> <label for="email" class="block text-sm font-medium text-gray-700 mb-1">Email Address</label> <input type="email" id="email" name="email" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent" required> </div>
+                            <div> <label for="mobile" class="block text-sm font-medium text-gray-700 mb-1">Mobile Number (India)</label> <input type="tel" id="mobile" name="mobile" pattern="[6-9][0-9]{9}" title="Please enter a valid 10-digit Indian mobile number" placeholder="e.g., 9876543210" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent" required> </div>
+                            <div> <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Create Password</label> <input type="password" id="password" name="password" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent" required minlength="8"> <p class="text-xs text-gray-500 mt-1">Minimum 8 characters</p> </div>
+                            <div> <label for="confirm-password" class="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label> <input type="password" id="confirm-password" name="confirm_password" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent" required> </div>
+                            <div> <label for="address" class="block text-sm font-medium text-gray-700 mb-1">Address (Street, Area)</label> <input type="text" id="address" name="address" placeholder="e.g., 123 Main St, Koramangala" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent" required> <p class="text-xs text-gray-500 mt-1">We need this to find walkers/jobs near you.</p> </div>
+                            <div id="age-field-walker" class="hidden"> <label for="age-walker" class="block text-sm font-medium text-gray-700 mb-1">Your Age</label> <input type="number" id="age-walker" name="age_walker" min="18" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"> <p class="text-xs text-gray-500 mt-1">Minimum age to be a walker is 18.</p> </div>
+                            <div class="pt-2"> <button type="submit" class="w-full py-3 px-4 bg-purple-600 text-white font-medium rounded-lg hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 transition signup-btn"> Create Account & Proceed </button> </div>
+                        </form>
+                        <div class="text-center mt-6">
+                            <p class="text-gray-600 text-sm"> By signing up, you agree to our <a href="#" class="text-purple-600 hover:underline">Terms of Service</a> and <a href="#" class="text-purple-600 hover:underline">Privacy Policy</a>. </p>
+                            <p class="text-gray-600 text-sm mt-2"> Want to choose a different plan? <button id="back-to-plans" class="text-purple-600 hover:underline font-medium">Go Back</button> </p>
+                         </div>
+                    </div>
+                </div>
+            </section>
+        </main>
+        <footer class="mt-12 text-center text-gray-500 text-sm py-6"> <p>© 2024 Pawsitive Strides. All rights reserved.</p> </footer>
+    </div>
+</body>
+</html>
