@@ -4,6 +4,7 @@
 body {
     background-color: #fff;
     font-family: sans-serif;
+    overflow-x: hidden;
 }
 
 /* Hero Section */
@@ -52,6 +53,12 @@ body {
     justify-content: center;
 }
 
+@media (max-width: 768px) {
+    #map-container {
+        height: 400px;
+    }
+}
+
 /* Dog Cards */
 .dog-card {
     border: 1px solid #e5e7eb;
@@ -95,4 +102,149 @@ textarea.input-field {
 
 .fade-enter, .fade-leave-to {
     opacity: 0;
+}
+
+/* Mobile Responsive Styles */
+
+/* Small screens */
+@media (max-width: 640px) {
+    h1 {
+        font-size: 2rem !important;
+        line-height: 1.2 !important;
+    }
+    
+    h2 {
+        font-size: 1.75rem !important;
+    }
+    
+    h3 {
+        font-size: 1.25rem !important;
+    }
+    
+    .py-20 {
+        padding-top: 3rem;
+        padding-bottom: 3rem;
+    }
+    
+    .py-12 {
+        padding-top: 2rem;
+        padding-bottom: 2rem;
+    }
+    
+    .px-8 {
+        padding-left: 1rem;
+        padding-right: 1rem;
+    }
+    
+    .py-3 {
+        padding-top: 0.5rem;
+        padding-bottom: 0.5rem;
+    }
+    
+    /* Add more compact spacing for mobile */
+    .space-y-8 > :not([hidden]) ~ :not([hidden]) {
+        --tw-space-y-reverse: 0;
+        margin-top: calc(1.5rem * calc(1 - var(--tw-space-y-reverse)));
+        margin-bottom: calc(1.5rem * var(--tw-space-y-reverse));
+    }
+    
+    .mb-16 {
+        margin-bottom: 2rem;
+    }
+    
+    .mt-12 {
+        margin-top: 2rem;
+    }
+    
+    .gap-12 {
+        gap: 1.5rem;
+    }
+}
+
+/* Medium screens */
+@media (min-width: 641px) and (max-width: 768px) {
+    .py-20 {
+        padding-top: 4rem;
+        padding-bottom: 4rem;
+    }
+    
+    .gap-12 {
+        gap: 2rem;
+    }
+}
+
+/* Fix for mobile menu */
+#mobile-menu {
+    transition: all 0.3s ease;
+}
+
+/* Fix for pricing cards on mobile */
+@media (max-width: 1024px) {
+    #pricing .flex-col > div {
+        max-width: 500px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+}
+
+/* Mobile table styles */
+@media (max-width: 768px) {
+    .table-responsive {
+        display: block;
+        width: 100%;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    /* Convert some tables to card layout on mobile */
+    .table-to-cards {
+        display: block;
+    }
+    
+    .table-to-cards thead {
+        display: none;
+    }
+    
+    .table-to-cards tbody, .table-to-cards tr {
+        display: block;
+        width: 100%;
+    }
+    
+    .table-to-cards td {
+        display: flex;
+        text-align: right;
+        padding: 0.5rem;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .table-to-cards td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        margin-right: auto;
+        text-align: left;
+    }
+    
+    .table-to-cards tr {
+        margin-bottom: 1rem;
+        border: 1px solid #e5e7eb;
+        border-radius: 0.5rem;
+        padding: 0.5rem;
+    }
+}
+
+/* Improve form elements on mobile */
+@media (max-width: 640px) {
+    input, select, textarea {
+        font-size: 16px !important; /* Prevents iOS zoom on focus */
+    }
+    
+    .form-row {
+        flex-direction: column;
+    }
+    
+    .form-row > div {
+        width: 100%;
+        margin-right: 0;
+        margin-bottom: 1rem;
+    }
 } 

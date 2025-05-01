@@ -23,32 +23,53 @@
         <header class="bg-white py-4 px-6 shadow-sm mb-8">
             <div class="max-w-7xl mx-auto flex justify-between items-center">
                 <div class="flex items-center">
-                    <a href="index.html" class="flex items-center">
+                    <a href="/" class="flex items-center">
                         <img src="../../image/logo.svg" alt="Pawsitive Strides" class="w-10 h-10 mr-3">
                         <span class="text-lg font-bold text-purple-800">Pawsitive Strides</span>
                     </a>
                 </div>
+                <!-- Navigation - Desktop -->
                 <nav class="hidden md:flex items-center space-x-8">
-                    <a href="index.html#how-it-works" class="text-gray-600 hover:text-purple-600 font-medium flex items-center">How It Works <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg></a>
-                    <a href="signup.html" class="text-gray-600 hover:text-purple-600 font-medium">Find a Walker</a>
-                    <a href="index.html#about-us" class="text-gray-600 hover:text-purple-600 font-medium">About Us</a>
-                    <a href="contact.html" class="text-gray-600 hover:text-purple-600 font-medium">Contact</a>
+                    <a href="/#how-it-works" class="text-gray-600 hover:text-purple-600 font-medium flex items-center">How It Works <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" /></svg></a>
+                    <a href="/signup" class="text-gray-600 hover:text-purple-600 font-medium">Find a Walker</a>
+                    <a href="/#about-us" class="text-gray-600 hover:text-purple-600 font-medium">About Us</a>
+                    <a href="/contact" class="text-gray-600 hover:text-purple-600 font-medium">Contact</a>
                 </nav>
-                <div class="flex items-center space-x-4">
-                    <a href="login.html" class="text-gray-700 hover:text-purple-600 font-medium border border-gray-200 rounded-full px-6 py-2">Log In</a>
-                    <a href="signup.html" class="bg-purple-500 text-white hover:bg-purple-600 font-medium rounded-full px-6 py-2">Sign Up</a>
+                <!-- Auth Buttons - Desktop -->
+                <div class="hidden md:flex items-center space-x-4">
+                    <a href="/login" class="text-gray-700 hover:text-purple-600 font-medium border border-gray-200 rounded-full px-6 py-2">Log In</a>
+                    <a href="/signup" class="bg-purple-500 text-white hover:bg-purple-600 font-medium rounded-full px-6 py-2">Sign Up</a>
+                </div>
+                
+                <!-- Mobile menu button -->
+                <button id="mobile-menu-button" class="md:hidden flex items-center p-2 rounded-md text-purple-600 hover:text-purple-800 hover:bg-purple-50 focus:outline-none">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
+            </div>
+            
+            <!-- Mobile menu -->
+            <div id="mobile-menu" class="hidden md:hidden mt-4 px-2 pb-4">
+                <a href="/#how-it-works" class="block py-2 px-4 text-gray-600 hover:text-purple-600 font-medium rounded-md hover:bg-purple-50">How It Works</a>
+                <a href="/signup" class="block py-2 px-4 text-gray-600 hover:text-purple-600 font-medium rounded-md hover:bg-purple-50">Find a Walker</a>
+                <a href="/#about-us" class="block py-2 px-4 text-gray-600 hover:text-purple-600 font-medium rounded-md hover:bg-purple-50">About Us</a>
+                <a href="/contact" class="block py-2 px-4 text-gray-600 hover:text-purple-600 font-medium rounded-md hover:bg-purple-50">Contact</a>
+                <div class="mt-4 pt-4 border-t border-gray-200 flex flex-col space-y-3 px-4">
+                    <a href="/login" class="text-gray-700 hover:text-purple-600 font-medium border border-gray-200 rounded-full px-6 py-2 text-center">Log In</a>
+                    <a href="/signup" class="bg-purple-500 text-white hover:bg-purple-600 font-medium rounded-full px-6 py-2 text-center">Sign Up</a>
                 </div>
             </div>
         </header>
 
         <main>
             <!-- Step 1: Plan Selection -->
-            <section id="plan-selection" class="max-w-4xl mx-auto transition duration-500 ease-in-out">
-                 <div class="text-center mb-10">
+            <section id="plan-selection" class="max-w-4xl mx-auto transition duration-500 ease-in-out px-4 sm:px-0">
+                 <div class="text-center mb-8 md:mb-10">
                     <h1 class="text-3xl md:text-4xl font-bold text-gray-800 mb-4">Join Pawsitive Strides</h1>
                     <p class="text-lg text-gray-600">First, tell us who you are and choose your starting plan.</p>
                 </div>
-                <div class="grid md:grid-cols-3 gap-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
                     <!-- Pet Owner - Monthly -->
                     <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-200 flex flex-col">
                         <div class="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-xs font-medium inline-block mb-4 self-start">Pet Owner</div>
@@ -83,14 +104,14 @@
                     </div>
                 </div>
                  <div class="text-center mt-8">
-                    <p class="text-gray-600 text-sm"> Already have an account? <a href="login.html" class="text-purple-600 hover:underline font-medium">Log in here</a> </p>
+                    <p class="text-gray-600 text-sm"> Already have an account? <a href="/login" class="text-purple-600 hover:underline font-medium">Log in here</a> </p>
                 </div>
             </section>
 
             <!-- Step 2: Registration Form -->
-            <section id="registration-form-section" class="hidden max-w-lg mx-auto transition duration-500 ease-in-out">
+            <section id="registration-form-section" class="hidden max-w-lg mx-auto transition duration-500 ease-in-out px-4 sm:px-0">
                  <div class="bg-white rounded-lg shadow-md overflow-hidden border border-gray-200">
-                    <div class="p-8">
+                    <div class="p-6 sm:p-8">
                         <div class="text-center mb-6">
                             <h1 id="registration-title" class="text-2xl font-bold text-gray-800">Create Your Account</h1>
                             <p class="text-gray-600 mt-1">Complete the details below to get started.</p>
@@ -119,5 +140,35 @@
         </main>
         <footer class="mt-12 text-center text-gray-500 text-sm py-6"> <p>© 2024 Pawsitive Strides. All rights reserved.</p> </footer>
     </div>
+    
+    <script>
+        // Mobile menu functionality
+        document.addEventListener('DOMContentLoaded', function() {
+            const mobileMenuButton = document.getElementById('mobile-menu-button');
+            const mobileMenu = document.getElementById('mobile-menu');
+            
+            if (mobileMenuButton && mobileMenu) {
+                mobileMenuButton.addEventListener('click', () => {
+                    // Toggle the menu visibility
+                    if (mobileMenu.classList.contains('hidden')) {
+                        mobileMenu.classList.remove('hidden');
+                        mobileMenuButton.setAttribute('aria-expanded', 'true');
+                    } else {
+                        mobileMenu.classList.add('hidden');
+                        mobileMenuButton.setAttribute('aria-expanded', 'false');
+                    }
+                });
+                
+                // Close mobile menu when clicking on a link
+                const mobileMenuLinks = mobileMenu.querySelectorAll('a');
+                mobileMenuLinks.forEach(link => {
+                    link.addEventListener('click', () => {
+                        mobileMenu.classList.add('hidden');
+                        mobileMenuButton.setAttribute('aria-expanded', 'false');
+                    });
+                });
+            }
+        });
+    </script>
 </body>
 </html>
