@@ -49,4 +49,4 @@ document.addEventListener('DOMContentLoaded', () => {
             loginBtn.disabled = false;
         }
     });
-}); 
+});

@@ -54,4 +54,4 @@ window.pawsitiveCommon = {
     checkAuth,
     requireAuth,
     requireNoAuth
-}; 
+};
