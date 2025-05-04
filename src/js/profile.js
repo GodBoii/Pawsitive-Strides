@@ -1,5 +1,7 @@
 // Profile/Dashboard functionality for Pawsitive Strides
 // Uses RPC function for finding nearby users.
+const MAPS_SCRIPT_ID = 'google-maps-api-script'; // ID to check if script exists
+let mapsApiLoading = false; // Flag to prevent multiple loads
 
 document.addEventListener('DOMContentLoaded', async () => {
     // --- Supabase Init & Auth Check ---
@@ -90,44 +92,84 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // --- Core Map Initialization Logic ---
     function initializeMapRelatedFeatures() {
-        console.log(">>> START initializeMapRelatedFeatures (profile.js)");
-        if (mapInitialized) { console.log("    Map features already initialized. Exiting."); return; }
-        if (!checkMapsApiLoaded()) { console.error("    !!! Google Maps API objects not ready inside initializeMapRelatedFeatures. Exiting."); profileLoadErrorDiv.textContent = 'Failed to load map services components.'; profileLoadErrorDiv.classList.remove('hidden'); return; }
-
-        try {
-            console.log("    Initializing Geocoder...");
-            geocoder = new google.maps.Geocoder();
-            console.log('    Geocoder initialized.');
-
-            console.log("    Initializing Autocomplete...");
-            initAutocomplete();
-            console.log("    Autocomplete initialization attempted.");
-
-            console.log("    Initializing Main Map...");
-            if (!mapContainer) {
-                console.error("    !!! Main map container element (#map-container) not found.");
-            } else {
-                 mainMap = new google.maps.Map(mapContainer, {
-                    center: INDIA_CENTER, zoom: DEFAULT_ZOOM, mapId: '8a23b4bdd9ef4f8c', mapTypeControl: false, streetViewControl: false });
-                 console.log('    Main map view initialized.');
-                 const loadingMsg = mapContainer.querySelector('.map-loading-message'); if(loadingMsg) loadingMsg.style.display = 'none';
+        // Use whenGoogleMapsReady to ensure the API objects are available
+        whenGoogleMapsReady(() => {
+            // This inner code block now runs ONLY after the Google Maps script is loaded and initMap has run
+            console.log(">>> START initializeMapRelatedFeatures (Execution via whenGoogleMapsReady)");
+    
+            // Check if already initialized (prevents running core logic multiple times)
+            if (mapInitialized) {
+                console.log("    Map features already initialized. Exiting actual setup.");
+                // If map section is active, ensure data is loaded even if initialized before
+                if (mapSection?.classList.contains('active') && mainMap && !mapDataLoaded) {
+                     console.log('    Map section active, map initialized, ensuring data load.');
+                     loadMapData();
+                }
+                return;
             }
-
-            console.log("    Setting mapInitialized = true");
-            mapInitialized = true; // Mark core services as ready
-
-            // Check if map section is active and load data if needed NOW
-            if (mapSection?.classList.contains('active') && !mapDataLoaded) {
-                if(mainMap) { console.log('    Main map section is active, calling loadMapData.'); loadMapData(); }
-                else { console.warn('    Main map section is active, but mainMap instance is null.'); if(mapContainer) { const loadingMsg = mapContainer.querySelector('.map-loading-message'); if (loadingMsg) loadingMsg.textContent = 'Error: Map could not be initialized.'; else mapContainer.innerHTML = '<p class="map-loading-message text-red-500 p-4">Error: Map could not be initialized.</p>'; } }
+    
+            // Defensive check (optional, as whenGoogleMapsReady implies readiness)
+            if (!checkMapsApiLoaded()) {
+                console.error("    !!! Google Maps API objects still not ready inside callback? This shouldn't happen.");
+                profileLoadErrorDiv.textContent = 'Failed to load map services components after script load.';
+                profileLoadErrorDiv.classList.remove('hidden');
+                return;
             }
-             console.log("<<< SUCCESS initializeMapRelatedFeatures (profile.js)");
-
-        } catch (error) {
-            console.error('    !!! Error during initializeMapRelatedFeatures:', error); mapInitialized = false; profileLoadErrorDiv.textContent = 'Error setting up map features: ' + error.message; profileLoadErrorDiv.classList.remove('hidden');
-             if (mapContainer) { mapContainer.innerHTML = `<p class="map-loading-message text-red-600 p-4">Error initializing map: ${error.message}</p>`; }
-             console.log("<<< FAILED initializeMapRelatedFeatures (profile.js)");
-        }
+    
+            try {
+                console.log("    Initializing Geocoder...");
+                geocoder = new google.maps.Geocoder();
+                console.log('    Geocoder initialized.');
+    
+                console.log("    Initializing Autocomplete...");
+                initAutocomplete(); // Assumes this needs google.maps.places
+                console.log("    Autocomplete initialization attempted.");
+    
+                console.log("    Initializing Main Map...");
+                const mapContainer = document.getElementById('map-container'); // Ensure mapContainer is accessible here
+                if (!mapContainer) {
+                    console.error("    !!! Main map container element (#map-container) not found.");
+                     profileLoadErrorDiv.textContent = 'Map container element not found.';
+                     profileLoadErrorDiv.classList.remove('hidden');
+                } else {
+                     // Clear any previous error/loading message
+                     mapContainer.innerHTML = ''; // Clear placeholder/error messages
+                     mainMap = new google.maps.Map(mapContainer, {
+                        center: INDIA_CENTER, // Constants like INDIA_CENTER need to be defined/accessible
+                        zoom: DEFAULT_ZOOM,
+                        mapId: '8a23b4bdd9ef4f8c', // Consider making this dynamic if needed
+                        mapTypeControl: false,
+                        streetViewControl: false
+                     });
+                     console.log('    Main map view initialized.');
+                }
+    
+                console.log("    Setting mapInitialized = true");
+                mapInitialized = true; // Mark core services as ready
+    
+                // Check if map section is active and load data if needed NOW
+                const mapSection = document.getElementById('map-section'); // Ensure mapSection is accessible
+                if (mapSection?.classList.contains('active') && !mapDataLoaded) {
+                    if (mainMap) {
+                        console.log('    Main map section is active, calling loadMapData.');
+                        loadMapData();
+                    } else {
+                        console.warn('    Main map section is active, but mainMap instance is null.');
+                        if (mapContainer) { mapContainer.innerHTML = '<p class="map-loading-message text-red-500 p-4">Error: Map could not be initialized.</p>'; }
+                    }
+                }
+                console.log("<<< SUCCESS initializeMapRelatedFeatures (Execution via whenGoogleMapsReady)");
+    
+            } catch (error) {
+                console.error('    !!! Error during initializeMapRelatedFeatures execution:', error);
+                mapInitialized = false; // Reset flag
+                profileLoadErrorDiv.textContent = 'Error setting up map features: ' + error.message;
+                profileLoadErrorDiv.classList.remove('hidden');
+                const mapContainer = document.getElementById('map-container');
+                if (mapContainer) { mapContainer.innerHTML = `<p class="map-loading-message text-red-600 p-4">Error initializing map: ${error.message}</p>`; }
+                console.log("<<< FAILED initializeMapRelatedFeatures (Execution via whenGoogleMapsReady)");
+            }
+        }); // End of whenGoogleMapsReady wrapper
     }
 
     // --- Profile & Dog Functions ---
@@ -524,11 +566,221 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    async function handleOwnerDetailsUpdate(event) {
+        event.preventDefault(); // Prevent default form submission
+    
+        // Get the message element (ensure ownerDetailsMessage is accessible)
+        const ownerDetailsMessage = document.querySelector('#owner-profile-content .owner-details-message'); // Adjust selector if needed
+        if (ownerDetailsMessage) {
+            ownerDetailsMessage.textContent = 'Updating owner details...';
+            ownerDetailsMessage.style.color = 'inherit';
+        }
+    
+        console.log("Owner details form submitted. (Implementation pending)");
+    
+        // --- Add your actual logic here ---
+        // 1. Ensure ownerDetailsForm is accessible (get it via ID if needed)
+        //    const ownerDetailsForm = document.getElementById('owner-details-form');
+        // 2. Get form data: const formData = new FormData(ownerDetailsForm);
+        // 3. Construct the 'updates' object for Supabase:
+        //    const updates = {
+        //        emergency_contact_name: formData.get('emergency_contact_name')?.trim() || null,
+        //        emergency_contact_phone: formData.get('emergency_contact_phone')?.trim() || null,
+        //        preferred_communication: formData.get('preferred_communication') || null,
+        //        owner_notes_for_walker: formData.get('owner_notes_for_walker')?.trim() || null,
+        //        updated_at: new Date()
+        //    };
+        // 4. Ensure currentUser is accessible (it should be from initDashboard scope)
+        // 5. Call Supabase update:
+        //    const { data: updatedProfile, error } = await _supabase
+        //        .from('profiles')
+        //        .update(updates)
+        //        .eq('id', currentUser.id)
+        //        .select('*') // Select necessary fields
+        //        .single();
+        // 6. Handle success (update message, potentially update userProfile variable)
+        // 7. Handle error (update message)
+        // ----------------------------------
+    
+        // Temporary placeholder message:
+        await new Promise(resolve => setTimeout(resolve, 500)); // Simulate delay
+        if (ownerDetailsMessage) {
+            ownerDetailsMessage.textContent = 'Owner details updated successfully (placeholder).';
+            ownerDetailsMessage.style.color = 'green';
+        }
+    }
+
+    async function handleWalkerDetailsUpdate(event) {
+        event.preventDefault(); // Prevent default form submission
+    
+        // Get the message element (ensure walkerMessage is defined/accessible)
+        const walkerMessage = document.querySelector('#walker-profile-content .walker-message'); // Or get it via a more reliable selector/variable
+        if (walkerMessage) {
+             walkerMessage.textContent = 'Updating walker details...';
+             walkerMessage.style.color = 'inherit';
+        }
+        console.log("Walker details form submitted. (Implementation pending)");
+    
+        // --- Add your actual logic here later ---
+        // 1. Get walkerDetailsForm data (new FormData(walkerDetailsForm))
+        // 2. Collect availability data using collectAvailabilityData()
+        // 3. Construct the 'updates' object for Supabase
+        // 4. Call _supabase.from('profiles').update(...)
+        // 5. Handle success/error and update walkerMessage
+        // -----------------------------------------
+    
+        // Temporary message:
+         await new Promise(resolve => setTimeout(resolve, 500)); // Simulate delay
+         if (walkerMessage) {
+             walkerMessage.textContent = 'Walker update successful (placeholder).';
+             walkerMessage.style.color = 'green';
+         }
+    }
+
+    // Function to fetch key and load the Google Maps script
+    async function loadGoogleMapsApiKeyAndScript() {
+        // Check if script already exists or is loading
+        if (document.getElementById(MAPS_SCRIPT_ID) || mapsApiLoading) {
+            console.log("Google Maps script already loaded or loading.");
+            if(window.googleMapsApiReady) {
+                // Ensure features init if API is ready but script load was already triggered
+                whenGoogleMapsReady(initializeMapRelatedFeatures);
+            }
+            return; // Exit if already handled
+        }
+
+        mapsApiLoading = true; // Set loading flag
+        console.log("Attempting to load Google Maps API Key and Script...");
+        // Find map container early to show loading/error states
+        const mapContainer = document.getElementById('map-container');
+        if (mapContainer) {
+            let loadingMsg = mapContainer.querySelector('.map-loading-message');
+            if (!loadingMsg) {
+                loadingMsg = document.createElement('p');
+                loadingMsg.className = 'map-loading-message text-gray-600 p-4';
+                mapContainer.innerHTML = ''; // Clear previous content
+                mapContainer.appendChild(loadingMsg);
+            }
+            loadingMsg.textContent = 'Fetching map configuration...';
+        }
+
+
+        try {
+            // Get the current session to obtain the JWT (Authorization token)
+            const sessionResponse = await _supabase.auth.getSession(); // _supabase comes from common.js
+            const session = sessionResponse.data.session;
+
+            if (!session?.access_token) {
+                // Handle case where user isn't logged in properly before calling this
+                throw new Error("Authentication Error: No active session found. Cannot fetch API key.");
+            }
+
+            // Construct the URL to your deployed function
+            // Use SUPABASE_URL from common.js if available, otherwise hardcode temporarily
+            const supabaseUrl = window.pawsitiveCommon?.SUPABASE_URL || "https://btaoqcoxxpwegsotjdgh.supabase.co"; // Get base URL
+            const functionUrl = `${supabaseUrl}/functions/v1/get-maps-key`;
+            console.log(`Fetching API key from: ${functionUrl}`);
+
+            // Make the authenticated request to your function
+            const response = await fetch(functionUrl, {
+                method: 'POST', // Functions usually default to POST/GET, check logs if needed
+                headers: {
+                    // Crucial: Send the user's JWT to authenticate the request
+                    'Authorization': `Bearer ${session.access_token}`,
+                    // You might need the anon key depending on function security settings, often good practice
+                    'apikey': window.pawsitiveCommon?.SUPABASE_ANON_KEY || "YOUR_SUPABASE_ANON_KEY" // Get from common.js
+                    // 'Content-Type': 'application/json' // Add if sending a body
+                },
+                // body: JSON.stringify({}) // Add empty body if POST requires it, or remove if using GET
+            });
+
+            if (!response.ok) {
+                // Try to get error details from the function's response
+                let errorMsg = `Failed to fetch API key: ${response.status} ${response.statusText}`;
+                try {
+                    const errorData = await response.json();
+                    errorMsg += ` - ${errorData.error || 'Unknown function error'}`;
+                } catch (e) { /* Ignore parsing error if response wasn't JSON */ }
+                throw new Error(errorMsg);
+            }
+
+            // Parse the JSON response to get the API key
+            const data = await response.json();
+            const apiKey = data.apiKey; // Matches the JSON key returned by the function
+
+            if (!apiKey) {
+                throw new Error('API key not received from backend function.');
+            }
+
+            console.log("API Key received successfully from backend.");
+            if (mapContainer) mapContainer.querySelector('.map-loading-message')?.remove(); // Remove loading message
+
+            // Dynamically create the Google Maps script tag
+            const script = document.createElement('script');
+            script.id = MAPS_SCRIPT_ID; // Assign the ID
+            // Construct the script URL using the fetched key
+            script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=initMap&libraries=marker,geometry,places&v=beta`;
+            script.async = true;
+            script.defer = true; // Important: ensure HTML is parsed first
+            script.onerror = () => {
+                console.error("!!! Google Maps script failed to load.");
+                mapsApiLoading = false; // Reset flag
+                document.getElementById(MAPS_SCRIPT_ID)?.remove(); // Clean up failed script
+                // Update UI to show failure
+                if (mapContainer) mapContainer.innerHTML = '<p class="map-loading-message text-red-600 p-4">Error: Could not load Google Maps script.</p>';
+            };
+
+            // Append the script to the <head> of the document
+            document.head.appendChild(script);
+            console.log("Google Maps script tag dynamically appended to head.");
+
+        } catch (error) {
+            console.error('Error loading Google Maps API key/script:', error);
+            mapsApiLoading = false; // Reset flag on error
+            // Display error in the map container
+            if (mapContainer) mapContainer.innerHTML = `<p class="map-loading-message text-red-600 p-4">Error loading map services: ${error.message}</p>`;
+            // You might want more robust UI error handling here
+        }
+        // Note: mapsApiLoading becomes false implicitly when initMap sets googleMapsApiReady=true
+    }   
+
     // --- Initialize Dashboard ---
     async function initDashboard() {
         console.log(">>> START initDashboard (profile.js)");
+        // Define DOM elements needed early (ensure they are accessible in this scope)
+        const loadingState = document.getElementById('loading-state');
+        const mainContent = document.getElementById('main-content');
+        const profileLoadErrorDiv = document.getElementById('profile-load-error');
+        const userEmailDisplay = document.getElementById('user-email');
+        const sidebarLinks = document.querySelectorAll('.sidebar-link');
+        const contentSections = document.querySelectorAll('.content-section');
+        const ownerContent = document.getElementById('owner-profile-content');
+        const walkerContent = document.getElementById('walker-profile-content');
+        const mapTitleRole = document.getElementById('map-title-role');
+        const mapDescriptionRole = document.getElementById('map-description-role');
+        // Add other needed elements like profileForm, pinLocationButton etc. if not defined globally
+        const profileForm = document.getElementById('profile-form');
+        const pinLocationButton = document.getElementById('pin-location-btn');
+        const addDogForm = ownerContent?.querySelector('#add-dog-form'); // Use optional chaining
+        const ownerDetailsForm = ownerContent?.querySelector('#owner-details-form');
+        const walkerDetailsForm = walkerContent?.querySelector('#walker-details-form');
+        const pickerMapContainer = document.getElementById('picker-map-container');
+    
+    
         try {
-            // Sidebar Navigation Listener
+            // --- Supabase Client and Auth Check ---
+            // Ensure _supabase is initialized (assuming from common.js or global scope)
+            // const _supabase = pawsitiveCommon.createSupabaseClient(); // Make sure this is called appropriately
+            console.log('Supabase Initialized Check (Dashboard)');
+            const currentUser = await pawsitiveCommon.requireAuth(_supabase); // Make sure _supabase is passed or accessible
+            if (!currentUser) {
+                 console.log("User not authenticated, stopping dashboard init.");
+                 // Redirect logic is likely within requireAuth, but good to check
+                 return;
+            }
+            pawsitiveCommon.setupLogout(_supabase); // Setup logout button
+    
+            // --- Sidebar Navigation Listener ---
             sidebarLinks.forEach(link => {
                 link.addEventListener('click', (e) => {
                     e.preventDefault();
@@ -538,64 +790,131 @@ document.addEventListener('DOMContentLoaded', async () => {
                     link.classList.add('active');
                     contentSections.forEach(section => section.classList.remove('active'));
                     const targetSection = document.getElementById(targetSectionId);
-                    if (targetSection) { targetSection.classList.add('active'); } else { console.error(`Target section #${targetSectionId} not found!`); return; }
-
-                    // Handle map loading/state when switching tabs
+                    if (targetSection) {
+                        targetSection.classList.add('active');
+                    } else {
+                        console.error(`Target section #${targetSectionId} not found!`);
+                        return;
+                    }
+    
+                    // --- Handle map loading/state when switching tabs ---
                     if (targetSectionId === 'map-section') {
-                        console.log("Map section activated.");
-                        mapDataLoaded = false; // Reset flag to force reload check
-                        if (mapInitialized && !mapDataLoaded) { // Check if OUR init ran
-                            console.log("Map initialized, loading map data..."); loadMapData();
-                        } else { console.log("Map not ready or already loading."); }
+                        console.log("Map section activated via click.");
+                        // **Load-on-Demand Option**: If you want to load the script *only* when map is first clicked:
+                        // 1. Add a flag: let mapScriptLoadInitiated = false; (outside this listener)
+                        // 2. Uncomment the following lines and comment out the load call in the main initDashboard flow.
+                        /*
+                        if (!mapScriptLoadInitiated) {
+                            console.log("Map tab clicked for the first time, initiating script load...");
+                            loadGoogleMapsApiKeyAndScript(); // Load script on first click
+                            mapScriptLoadInitiated = true;
+                        } else if (window.googleMapsApiReady && mapInitialized && !mapDataLoaded) {
+                            console.log("Map script ready, map initialized, loading map data on tab click.");
+                            loadMapData(); // If script ready, just load data
+                        } else if (window.googleMapsApiReady && !mapInitialized) {
+                            console.log("Map script ready, but features not initialized yet. Queueing init.");
+                            initializeMapRelatedFeatures(); // Ensure init runs if API ready but map wasn't
+                        } else {
+                             console.log("Map script not ready yet or map data already loaded.");
+                             // Potentially show a loading indicator specific to the map tab
+                        }
+                        */
+    
+                        // **Original Logic (Script load initiated on dashboard load)**:
+                        // Check if map services are ready and initialized, then load data if needed.
+                        if (window.googleMapsApiReady && mapInitialized && !mapDataLoaded) {
+                            console.log("Map script ready, map initialized, loading map data on tab click.");
+                            loadMapData();
+                        } else if (window.googleMapsApiReady && !mapInitialized) {
+                             console.log("Map script ready, but features not initialized yet. Queueing init.");
+                             initializeMapRelatedFeatures(); // Make sure it gets initialized if API ready now
+                        } else if (!window.googleMapsApiReady) {
+                            console.log("Map section clicked, but API script is still loading/pending.");
+                             // Optionally show a loading message in the map area
+                             const mapContainer = document.getElementById('map-container');
+                             if (mapContainer && !mapContainer.querySelector('.map-loading-message')) {
+                                 mapContainer.innerHTML = '<p class="map-loading-message text-gray-600 p-4">Loading map services...</p>';
+                             }
+                        } else {
+                             console.log("Map data likely already loaded or map not initialized.");
+                        }
+    
                         // Hide picker if it was open
-                        pickerMapContainer?.classList.add('hidden'); pickerMarker?.setMap(null);
+                        pickerMapContainer?.classList.add('hidden');
+                        if(pickerMarker) pickerMarker.setMap(null); // Ensure pickerMarker is accessible
                     } else {
                         // Hide picker map if navigating away from profile section
-                         if(targetSectionId !== 'profile-section') {
-                            pickerMapContainer?.classList.add('hidden'); pickerMarker?.setMap(null);
-                         }
+                        if (targetSectionId !== 'profile-section') {
+                            pickerMapContainer?.classList.add('hidden');
+                             if(pickerMarker) pickerMarker.setMap(null); // Ensure pickerMarker is accessible
+                        }
                     }
                 });
             });
-
-            // Display User Email
-            if(userEmailDisplay) userEmailDisplay.textContent = currentUser.email;
-
-            // Fetch Profile - crucial step before proceeding
-            userProfile = await fetchUserProfile(currentUser.id);
-            if (!userProfile) return; // Stop initialization if profile fetch failed
-
-            // Queue Map Related Initializations (will run when Google API is ready)
-            console.log("    Queueing/running map initialization via whenGoogleMapsReady...");
-            whenGoogleMapsReady(initializeMapRelatedFeatures);
-
-            // Setup Non-Map Dependent UI
+    
+            // --- Display User Email ---
+            if (userEmailDisplay) userEmailDisplay.textContent = currentUser.email;
+    
+            // --- Fetch Profile ---
+            userProfile = await fetchUserProfile(currentUser.id); // Ensure fetchUserProfile is defined and accessible
+            if (!userProfile) {
+                // Error handled within fetchUserProfile, but ensure loading state is managed
+                loadingState.style.display = 'none';
+                mainContent.classList.add('hidden'); // Keep content hidden if profile fails
+                return; // Stop initialization
+            }
+    
+            // *** INITIATE DYNAMIC SCRIPT LOADING ***
+            console.log("    Initiating map API key fetch and script loading...");
+            loadGoogleMapsApiKeyAndScript(); // <<<< THIS IS THE PRIMARY CHANGE <<<<
+            // Note: initializeMapRelatedFeatures will now be triggered internally
+            // by the callback mechanism (initMap -> whenGoogleMapsReady)
+    
+            // --- Setup Non-Map Dependent UI (Runs immediately after profile fetch) ---
             if (userProfile.role === 'owner') {
                 ownerContent?.classList.remove('hidden');
-                if(mapTitleRole) mapTitleRole.textContent = 'Dog Walkers';
-                if(mapDescriptionRole) mapDescriptionRole.textContent = 'dog walkers';
-                const dogs = await fetchUserDogs(currentUser.id); displayDogs(dogs);
-                if (addDogForm) addDogForm.addEventListener('submit', handleAddDog);
+                if (mapTitleRole) mapTitleRole.textContent = 'Dog Walkers';
+                if (mapDescriptionRole) mapDescriptionRole.textContent = 'dog walkers';
+                // Fetch and display dogs immediately
+                const dogs = await fetchUserDogs(currentUser.id); // Ensure fetchUserDogs is defined
+                displayDogs(dogs); // Ensure displayDogs is defined
+                // Add event listeners for owner forms
+                if (addDogForm) addDogForm.addEventListener('submit', handleAddDog); // Ensure handleAddDog is defined
+                if (ownerDetailsForm) ownerDetailsForm.addEventListener('submit', handleOwnerDetailsUpdate); // Ensure handleOwnerDetailsUpdate is defined
             } else if (userProfile.role === 'walker') {
                 walkerContent?.classList.remove('hidden');
-                 if(mapTitleRole) mapTitleRole.textContent = 'Pet Owners';
-                 if(mapDescriptionRole) mapDescriptionRole.textContent = 'pet owners';
+                if (mapTitleRole) mapTitleRole.textContent = 'Pet Owners';
+                if (mapDescriptionRole) mapDescriptionRole.textContent = 'pet owners';
+                // Add event listener for walker form
+                 if (walkerDetailsForm) walkerDetailsForm.addEventListener('submit', handleWalkerDetailsUpdate); // Ensure handleWalkerDetailsUpdate is defined
             }
-            populateProfileForm(userProfile); // Populate form fields
-            if(profileForm) profileForm.addEventListener('submit', handleProfileUpdate); // Add save listener
-            if(pinLocationButton) pinLocationButton.addEventListener('click', initPickerMap); // Add pin location listener
-
-            // Hide Loading State & Show Content
+            // Populate the main profile form
+            populateProfileForm(userProfile); // Ensure populateProfileForm is defined
+            // Add listeners for main profile form and pin button
+            if (profileForm) profileForm.addEventListener('submit', handleProfileUpdate); // Ensure handleProfileUpdate is defined
+            if (pinLocationButton) pinLocationButton.addEventListener('click', initPickerMap); // Ensure initPickerMap is defined
+    
+            // --- Hide Loading State & Show Content ---
+            // This happens after profile is fetched and basic UI setup is done.
+            // Map might still be loading in the background.
             loadingState.style.display = 'none';
             mainContent.classList.remove('hidden');
-            console.log("<<< END initDashboard (profile.js) - Basic setup complete, maps will initialize when ready.");
-
+            console.log("<<< END initDashboard (profile.js) - Basic setup complete, map script loading initiated.");
+    
         } catch (error) {
             console.error('Error initializing dashboard:', error);
-            loadingState.style.display = 'none';
-            profileLoadErrorDiv.textContent = 'Fatal Error loading dashboard: ' + error.message;
-            profileLoadErrorDiv.classList.remove('hidden');
-            mainContent.classList.add('hidden');
+            // Ensure loading state is hidden on error
+            const loadingState = document.getElementById('loading-state');
+            if(loadingState) loadingState.style.display = 'none';
+            // Show error message
+            const profileLoadErrorDiv = document.getElementById('profile-load-error');
+             if(profileLoadErrorDiv) {
+                profileLoadErrorDiv.textContent = 'Fatal Error loading dashboard: ' + error.message;
+                profileLoadErrorDiv.classList.remove('hidden');
+             }
+            // Hide main content area
+            const mainContent = document.getElementById('main-content');
+            if(mainContent) mainContent.classList.add('hidden');
         }
     }
 
