@@ -19,6 +19,7 @@ document.addEventListener('DOMContentLoaded', () => {
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         errorMessage.classList.add('hidden');
+        errorMessage.textContent = ''; // Clear previous messages
         loginBtn.textContent = 'Logging in...';
         loginBtn.disabled = true;
 
@@ -35,13 +36,18 @@ document.addEventListener('DOMContentLoaded', () => {
             window.location.href = 'profile.html';
 
         } catch (error) {
+            // Log the detailed error for developers
             console.error('Login error:', error);
+
+            // Display user-friendly messages
             if (error.message.includes("Email not confirmed")) {
                 errorMessage.textContent = "Login failed: Please verify your email address first. Check your inbox (and spam folder).";
             } else if (error.message.includes("Invalid login credentials")) {
                 errorMessage.textContent = "Login failed: Invalid email or password.";
             } else {
-                errorMessage.textContent = `Login failed: ${error.message}`;
+                // *** SECURITY IMPROVEMENT: Use a generic message for other errors ***
+                errorMessage.textContent = "An unexpected error occurred during login. Please try again.";
+                // Avoid displaying raw error.message like `Login failed: ${error.message}`
             }
             errorMessage.classList.remove('hidden');
         } finally {

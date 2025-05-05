@@ -3,6 +3,60 @@
 const MAPS_SCRIPT_ID = 'google-maps-api-script'; // ID to check if script exists
 let mapsApiLoading = false; // Flag to prevent multiple loads
 
+/**
+ * Sanitizes strings to prevent XSS attacks
+ * @param {string} unsafeText - Text that might contain malicious content
+ * @return {string} - Sanitized text with HTML entities escaped
+ */
+function sanitizeHTML(unsafeText) {
+    if (typeof unsafeText !== 'string') {
+        return '';
+    }
+    
+    const div = document.createElement('div');
+    div.textContent = unsafeText;
+    return div.innerHTML;
+}
+
+/**
+ * Creates a DOM element with sanitized content
+ * @param {string} tag - HTML tag name
+ * @param {Object} attributes - Key-value pairs of attributes
+ * @param {string|Node|Array} content - Text content, DOM node, or array of nodes
+ * @return {HTMLElement} - The created element
+ */
+function createSafeElement(tag, attributes = {}, content = null) {
+    const element = document.createElement(tag);
+    
+    // Set attributes
+    Object.entries(attributes).forEach(([key, value]) => {
+        if (key === 'className') {
+            element.className = value;
+        } else {
+            element.setAttribute(key, value);
+        }
+    });
+    
+    // Add content
+    if (content !== null) {
+        if (typeof content === 'string') {
+            element.textContent = content;
+        } else if (content instanceof Node) {
+            element.appendChild(content);
+        } else if (Array.isArray(content)) {
+            content.forEach(item => {
+                if (item instanceof Node) {
+                    element.appendChild(item);
+                } else if (typeof item === 'string') {
+                    element.appendChild(document.createTextNode(item));
+                }
+            });
+        }
+    }
+    
+    return element;
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
     // --- Supabase Init & Auth Check ---
     const _supabase = pawsitiveCommon.createSupabaseClient();
@@ -227,33 +281,116 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function displayDogs(dogs) {
-         if (!dogListDiv || !noDogsMessage) return;
-         if (!dogs || dogs.length === 0) { noDogsMessage.style.display = 'block'; dogListDiv.innerHTML = ''; return; }
-        noDogsMessage.style.display = 'none'; dogListDiv.innerHTML = '';
+        if (!dogListDiv || !noDogsMessage) return;
+        if (!dogs || dogs.length === 0) { 
+            noDogsMessage.style.display = 'block'; 
+            dogListDiv.innerHTML = ''; 
+            return; 
+        }
+        
+        noDogsMessage.style.display = 'none';
+        dogListDiv.innerHTML = '';
+        
         dogs.forEach(dog => {
-            const dogCard = document.createElement('div'); dogCard.className = 'dog-card';
-            dogCard.innerHTML = `
-                <h4>${dog.name}</h4>
-                <div class="grid grid-cols-2 gap-2 text-sm">
-                    ${dog.breed ? `<div><span class="font-medium">Breed:</span> ${dog.breed}</div>` : ''}
-                    ${dog.age ? `<div><span class="font-medium">Age:</span> ${dog.age} years</div>` : ''}
-                    ${dog.gender ? `<div><span class="font-medium">Gender:</span> ${dog.gender}</div>` : ''}
-                    ${dog.weight ? `<div><span class="font-medium">Weight:</span> ${dog.weight} kg</div>` : ''}
-                </div>
-                
-                ${dog.temperament && dog.temperament.length > 0 ? 
-                    `<div class="mt-2 text-sm"><span class="font-medium">Temperament:</span> ${Array.isArray(dog.temperament) ? dog.temperament.join(', ') : dog.temperament}</div>` : ''}
-                
-                ${dog.special_needs ? `<div class="mt-2 text-sm"><span class="font-medium">Special Needs:</span> ${dog.special_needs}</div>` : ''}
-                ${dog.vet_contact ? `<div class="mt-2 text-sm"><span class="font-medium">Vet Contact:</span> ${dog.vet_contact}</div>` : ''}
-                ${dog.preferred_route ? `<div class="mt-2 text-sm"><span class="font-medium">Preferred Route:</span> ${dog.preferred_route}</div>` : ''}
-                
-                <div class="mt-3 pt-2 border-t border-gray-100 text-right">
-                    <button class="text-red-500 hover:text-red-700 text-sm font-medium remove-dog" data-dog-id="${dog.id}">Remove</button>
-                </div>`;
+            const dogCard = document.createElement('div');
+            dogCard.className = 'dog-card';
+            
+            // Create card header
+            const dogName = createSafeElement('h4', {}, dog.name);
+            dogCard.appendChild(dogName);
+            
+            // Create details grid
+            const detailsGrid = createSafeElement('div', {
+                className: 'grid grid-cols-2 gap-2 text-sm'
+            });
+            
+            // Add dog details safely
+            if (dog.breed) {
+                const breedDiv = createSafeElement('div', {}, [
+                    createSafeElement('span', {className: 'font-medium'}, 'Breed: '),
+                    document.createTextNode(dog.breed)
+                ]);
+                detailsGrid.appendChild(breedDiv);
+            }
+            
+            if (dog.age) {
+                const ageDiv = createSafeElement('div', {}, [
+                    createSafeElement('span', {className: 'font-medium'}, 'Age: '),
+                    document.createTextNode(`${dog.age} years`)
+                ]);
+                detailsGrid.appendChild(ageDiv);
+            }
+            
+            if (dog.gender) {
+                const genderDiv = createSafeElement('div', {}, [
+                    createSafeElement('span', {className: 'font-medium'}, 'Gender: '),
+                    document.createTextNode(dog.gender)
+                ]);
+                detailsGrid.appendChild(genderDiv);
+            }
+            
+            if (dog.weight) {
+                const weightDiv = createSafeElement('div', {}, [
+                    createSafeElement('span', {className: 'font-medium'}, 'Weight: '),
+                    document.createTextNode(`${dog.weight} kg`)
+                ]);
+                detailsGrid.appendChild(weightDiv);
+            }
+            
+            dogCard.appendChild(detailsGrid);
+            
+            // Add temperament if available
+            if (dog.temperament && dog.temperament.length > 0) {
+                const tempDiv = createSafeElement('div', {className: 'mt-2 text-sm'}, [
+                    createSafeElement('span', {className: 'font-medium'}, 'Temperament: '),
+                    document.createTextNode(Array.isArray(dog.temperament) ? dog.temperament.join(', ') : dog.temperament)
+                ]);
+                dogCard.appendChild(tempDiv);
+            }
+            
+            // Add other details
+            if (dog.special_needs) {
+                const needsDiv = createSafeElement('div', {className: 'mt-2 text-sm'}, [
+                    createSafeElement('span', {className: 'font-medium'}, 'Special Needs: '),
+                    document.createTextNode(dog.special_needs)
+                ]);
+                dogCard.appendChild(needsDiv);
+            }
+            
+            if (dog.vet_contact) {
+                const vetDiv = createSafeElement('div', {className: 'mt-2 text-sm'}, [
+                    createSafeElement('span', {className: 'font-medium'}, 'Vet Contact: '),
+                    document.createTextNode(dog.vet_contact)
+                ]);
+                dogCard.appendChild(vetDiv);
+            }
+            
+            if (dog.preferred_route) {
+                const routeDiv = createSafeElement('div', {className: 'mt-2 text-sm'}, [
+                    createSafeElement('span', {className: 'font-medium'}, 'Preferred Route: '),
+                    document.createTextNode(dog.preferred_route)
+                ]);
+                dogCard.appendChild(routeDiv);
+            }
+            
+            // Add remove button
+            const actionDiv = createSafeElement('div', {
+                className: 'mt-3 pt-2 border-t border-gray-100 text-right'
+            });
+            
+            const removeButton = createSafeElement('button', {
+                className: 'text-red-500 hover:text-red-700 text-sm font-medium remove-dog',
+                'data-dog-id': dog.id
+            }, 'Remove');
+            
+            actionDiv.appendChild(removeButton);
+            dogCard.appendChild(actionDiv);
+            
             dogListDiv.appendChild(dogCard);
         });
-        dogListDiv.querySelectorAll('.remove-dog').forEach(button => button.addEventListener('click', handleRemoveDogClick));
+        
+        dogListDiv.querySelectorAll('.remove-dog').forEach(button => 
+            button.addEventListener('click', handleRemoveDogClick));
     }
 
     async function handleRemoveDogClick(e) {
@@ -370,46 +507,145 @@ document.addEventListener('DOMContentLoaded', async () => {
          } catch (error) { console.error("Error initializing Autocomplete:", error); }
     }
 
+    // --- Map View Functions with XSS Protection ---
+
     function initPickerMap() {
-         if (!mapInitialized || !geocoder) { console.warn("Cannot init picker map yet: Map services not ready."); if(reverseGeocodeResultDiv) reverseGeocodeResultDiv.textContent = "Map services loading..."; return; }
-         if(!pickerMapContainer) { console.error("Picker map container not found."); return; }
-         pickerMapContainer.classList.remove('hidden'); pickerMapContainer.innerHTML = ''; // Clear loading message
-         let initialPosition = INDIA_CENTER; let initialZoom = DEFAULT_ZOOM;
-         if (selectedLocation) { initialPosition = { lat: selectedLocation.lat, lng: selectedLocation.lng }; initialZoom = DETAIL_ZOOM; }
-         else if (userProfile?.latitude && userProfile?.longitude) { initialPosition = { lat: userProfile.latitude, lng: userProfile.longitude }; initialZoom = DETAIL_ZOOM; }
-         console.log("[initPickerMap] Initial position:", initialPosition, "Zoom:", initialZoom);
-         try {
-             if (!pickerMap) { pickerMap = new google.maps.Map(pickerMapContainer, { center: initialPosition, zoom: initialZoom, mapTypeControl: false, streetViewControl: false, fullscreenControl: false }); }
-             else { pickerMap.setCenter(initialPosition); pickerMap.setZoom(initialZoom); }
-             if (!pickerMarker) { pickerMarker = new google.maps.Marker({ position: initialPosition, map: pickerMap, draggable: true, title: "Drag me!" }); pickerMarker.addListener('dragend', handleMarkerDragEnd); }
-             else { pickerMarker.setPosition(initialPosition); pickerMarker.setMap(pickerMap); }
-              if(reverseGeocodeResultDiv) reverseGeocodeResultDiv.textContent = 'Drag the marker to set location.';
-          } catch (error) { console.error("Error creating picker map/marker:", error); pickerMapContainer.innerHTML = `<p class="text-red-500 p-4">Error loading map: ${error.message}</p>`; }
+        if (!mapInitialized || !geocoder) { 
+            console.warn("Cannot init picker map yet: Map services not ready."); 
+            if(reverseGeocodeResultDiv) reverseGeocodeResultDiv.textContent = "Map services loading..."; 
+            return; 
+        }
+        
+        if(!pickerMapContainer) { 
+            console.error("Picker map container not found."); 
+            return; 
+        }
+        
+        pickerMapContainer.classList.remove('hidden');
+        
+        // Clear loading message safely
+        while (pickerMapContainer.firstChild) {
+            pickerMapContainer.removeChild(pickerMapContainer.firstChild);
+        }
+        
+        let initialPosition = INDIA_CENTER; 
+        let initialZoom = DEFAULT_ZOOM;
+        
+        if (selectedLocation) { 
+            initialPosition = { lat: selectedLocation.lat, lng: selectedLocation.lng }; 
+            initialZoom = DETAIL_ZOOM; 
+        } else if (userProfile?.latitude && userProfile?.longitude) { 
+            initialPosition = { lat: userProfile.latitude, lng: userProfile.longitude }; 
+            initialZoom = DETAIL_ZOOM; 
+        }
+        
+        console.log("[initPickerMap] Initial position:", initialPosition, "Zoom:", initialZoom);
+        
+        try {
+            if (!pickerMap) { 
+                pickerMap = new google.maps.Map(pickerMapContainer, { 
+                    center: initialPosition, 
+                    zoom: initialZoom, 
+                    mapTypeControl: false, 
+                    streetViewControl: false, 
+                    fullscreenControl: false 
+                }); 
+            } else { 
+                pickerMap.setCenter(initialPosition); 
+                pickerMap.setZoom(initialZoom); 
+            }
+            
+            if (!pickerMarker) { 
+                pickerMarker = new google.maps.Marker({ 
+                    position: initialPosition, 
+                    map: pickerMap, 
+                    draggable: true, 
+                    title: "Drag me!" 
+                }); 
+                pickerMarker.addListener('dragend', handleMarkerDragEnd); 
+            } else { 
+                pickerMarker.setPosition(initialPosition); 
+                pickerMarker.setMap(pickerMap); 
+            }
+            
+            if(reverseGeocodeResultDiv) reverseGeocodeResultDiv.textContent = 'Drag the marker to set location.';
+        } catch (error) { 
+            console.error("Error creating picker map/marker:", error); 
+            
+            // Create error message safely
+            const errorParagraph = document.createElement('p');
+            errorParagraph.className = 'text-red-500 p-4';
+            errorParagraph.textContent = `Error loading map: ${error.message}`;
+            pickerMapContainer.appendChild(errorParagraph);
+        }
     }
 
     function handleMarkerDragEnd(event) {
         if (!event?.latLng) return;
-        const lat = event.latLng.lat(); const lng = event.latLng.lng();
+        const lat = event.latLng.lat(); 
+        const lng = event.latLng.lng();
         console.log(`[handleMarkerDragEnd] Marker dragged to: Lat: ${lat}, Lng: ${lng}`);
-        if(reverseGeocodeResultDiv) reverseGeocodeResultDiv.textContent = 'Finding address...';
+        
+        if(reverseGeocodeResultDiv) {
+            reverseGeocodeResultDiv.textContent = 'Finding address...';
+        }
+        
         reverseGeocodeLatLng(event.latLng);
     }
 
     function reverseGeocodeLatLng(latLng) {
-        if (!geocoder) { console.error("Geocoder not available for reverse geocoding."); if(reverseGeocodeResultDiv) reverseGeocodeResultDiv.textContent = 'Error: Geocoding service not ready.'; return; }
+        if (!geocoder) { 
+            console.error("Geocoder not available for reverse geocoding."); 
+            if(reverseGeocodeResultDiv) {
+                reverseGeocodeResultDiv.textContent = 'Error: Geocoding service not ready.';
+            }
+            return; 
+        }
+        
         console.log("[reverseGeocodeLatLng] Requesting address for:", latLng.toString());
         geocoder.geocode({ 'location': latLng }, (results, status) => {
             console.log(`[reverseGeocodeLatLng] Status: ${status}`, results);
             if (status === 'OK') {
                 if (results?.[0]) { // Use optional chaining for safety
-                    const addressString = results[0].formatted_address; console.log(`[reverseGeocodeLatLng] Found address: ${addressString}`);
-                    if(profileAddressInput) profileAddressInput.value = addressString;
-                    selectedLocation = { lat: latLng.lat(), lng: latLng.lng(), address: addressString };
-                    if(reverseGeocodeResultDiv) reverseGeocodeResultDiv.textContent = `Location set: ${addressString.substring(0, 50)}...`;
-                    if(profileMessage) profileMessage.textContent = '';
+                    const addressString = results[0].formatted_address; 
+                    console.log(`[reverseGeocodeLatLng] Found address: ${addressString}`);
+                    
+                    // Safely set address in form
+                    if(profileAddressInput) {
+                        profileAddressInput.value = addressString;
+                    }
+                    
+                    // Store location with sanitized address
+                    selectedLocation = { 
+                        lat: latLng.lat(), 
+                        lng: latLng.lng(), 
+                        address: addressString // Address is already sanitized from Google API
+                    };
+                    
+                    // Set result message
+                    if(reverseGeocodeResultDiv) {
+                        reverseGeocodeResultDiv.textContent = `Location set: ${addressString.substring(0, 50)}...`;
+                    }
+                    
+                    if(profileMessage) {
+                        profileMessage.textContent = '';
+                    }
+                    
                     console.log("[reverseGeocodeLatLng] Stored selected location:", selectedLocation);
-                } else { console.warn('[reverseGeocodeLatLng] No results found.'); if(reverseGeocodeResultDiv) reverseGeocodeResultDiv.textContent = 'Could not find address.'; selectedLocation = null; }
-            } else { console.error(`[reverseGeocodeLatLng] Geocoder failed: ${status}`); if(reverseGeocodeResultDiv) reverseGeocodeResultDiv.textContent = `Error finding address: ${status}`; selectedLocation = null; }
+                } else { 
+                    console.warn('[reverseGeocodeLatLng] No results found.'); 
+                    if(reverseGeocodeResultDiv) {
+                        reverseGeocodeResultDiv.textContent = 'Could not find address.';
+                    }
+                    selectedLocation = null; 
+                }
+            } else { 
+                console.error(`[reverseGeocodeLatLng] Geocoder failed: ${status}`); 
+                if(reverseGeocodeResultDiv) {
+                    reverseGeocodeResultDiv.textContent = `Error finding address: ${status}`;
+                }
+                selectedLocation = null; 
+            }
         });
     }
 
@@ -420,16 +656,27 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!mapInitialized || !mainMap) {
             console.log("Skipping map data load - main map services not ready.");
             if (mapContainer) {
-                 let loadingMsg = mapContainer.querySelector('.map-loading-message');
-                 if (!loadingMsg) { loadingMsg = document.createElement('p'); loadingMsg.className = 'map-loading-message'; mapContainer.prepend(loadingMsg); }
-                 loadingMsg.textContent = 'Map services loading... Please wait.'; loadingMsg.style.display = 'block';
+                let loadingMsg = mapContainer.querySelector('.map-loading-message');
+                if (!loadingMsg) { 
+                    loadingMsg = document.createElement('p'); 
+                    loadingMsg.className = 'map-loading-message'; 
+                    mapContainer.prepend(loadingMsg); 
+                }
+                loadingMsg.textContent = 'Map services loading... Please wait.'; 
+                loadingMsg.style.display = 'block';
             }
             return;
         }
 
         let loadingMsg = mapContainer.querySelector('.map-loading-message');
-        if(!loadingMsg) { console.warn("Map loading msg missing, creating."); loadingMsg = document.createElement('p'); loadingMsg.className = 'map-loading-message'; mapContainer.prepend(loadingMsg); }
-        loadingMsg.textContent = 'Loading your location...'; loadingMsg.style.display = 'block';
+        if(!loadingMsg) { 
+            console.warn("Map loading msg missing, creating."); 
+            loadingMsg = document.createElement('p'); 
+            loadingMsg.className = 'map-loading-message'; 
+            mapContainer.prepend(loadingMsg); 
+        }
+        loadingMsg.textContent = 'Loading your location...'; 
+        loadingMsg.style.display = 'block';
         mapContainer.style.backgroundColor = '#f9fafb'; // Reset background
 
         // Clear previous markers
@@ -445,15 +692,34 @@ document.addEventListener('DOMContentLoaded', async () => {
             userCoords = { lat: userProfile.latitude, lng: userProfile.longitude };
             console.log("[loadMapData] Plotting current user at:", userCoords);
             try {
-                userMarker = new google.maps.Marker({ position: userCoords, map: mainMap, title: 'Your Location', icon: { path: google.maps.SymbolPath.CIRCLE, scale: 10, fillColor: '#8B5CF6', fillOpacity: 1, strokeColor: '#ffffff', strokeWeight: 2 }, zIndex: 100 });
+                userMarker = new google.maps.Marker({ 
+                    position: userCoords, 
+                    map: mainMap, 
+                    title: 'Your Location', 
+                    icon: { 
+                        path: google.maps.SymbolPath.CIRCLE, 
+                        scale: 10, 
+                        fillColor: '#8B5CF6', 
+                        fillOpacity: 1, 
+                        strokeColor: '#ffffff', 
+                        strokeWeight: 2 
+                    }, 
+                    zIndex: 100 
+                });
                 bounds.extend(userCoords);
                 loadingMsg.textContent = `Finding nearby ${userProfile.role === 'owner' ? 'walkers' : 'owners'}...`;
-            } catch (markerError) { console.error("Error creating user marker:", markerError); loadingMsg.textContent = 'Error displaying your location.'; }
+            } catch (markerError) { 
+                console.error("Error creating user marker:", markerError); 
+                loadingMsg.textContent = 'Error displaying your location.'; 
+            }
         } else {
             console.warn("[loadMapData] No coordinates for user. Update profile to see nearby users.");
-            loadingMsg.textContent = 'Your location not set. Update profile to see nearby users.'; loadingMsg.style.display = 'block';
-            mainMap.setCenter(INDIA_CENTER); mainMap.setZoom(DEFAULT_ZOOM);
-            mapDataLoaded = true; return;
+            loadingMsg.textContent = 'Your location not set. Update profile to see nearby users.'; 
+            loadingMsg.style.display = 'block';
+            mainMap.setCenter(INDIA_CENTER); 
+            mainMap.setZoom(DEFAULT_ZOOM);
+            mapDataLoaded = true; 
+            return;
         }
 
         // 2. Determine Target Role & Call RPC
@@ -490,53 +756,96 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.log(`[loadMapData] RPC returned ${nearbyUsers?.length || 0} nearby users.`);
 
             // 3. Plot Nearby Users
-            const infowindow = new google.maps.InfoWindow(); let plottedCount = 0;
+            const infowindow = new google.maps.InfoWindow(); 
+            let plottedCount = 0;
+            
             if (nearbyUsers?.length > 0) {
-                 nearbyUsers.forEach(user => {
-                     if (typeof user.latitude === 'number' && typeof user.longitude === 'number') {
-                         const otherCoords = { lat: user.latitude, lng: user.longitude };
-                         try {
-                             const marker = new google.maps.Marker({ position: otherCoords, map: mainMap, title: user.full_name, icon: { path: google.maps.SymbolPath.CIRCLE, scale: 8, fillColor: targetRole === 'walker' ? '#10B981' : '#F59E0B', fillOpacity: 1, strokeColor: '#ffffff', strokeWeight: 2 } });
-                             otherUserMarkers.push(marker); bounds.extend(otherCoords); plottedCount++;
-                             
-                             marker.addListener('click', () => { 
-                                 const infoContent = `
-                                     <div class="p-2">
-                                         <strong>${user.full_name || 'N/A'}</strong><br>
-                                         ${user.role === 'owner' ? 'Pet Owner' : 'Dog Walker'}<br>
-                                         <small>Approx. ${user.distance_km?.toFixed(1) ?? '?'} km away</small>
-                                         <div class="mt-2">
-                                             <button class="view-profile-btn bg-purple-600 text-white text-xs px-3 py-1 rounded hover:bg-purple-700" 
-                                                    data-user-id="${user.id}" 
-                                                    data-user-role="${user.role}"
-                                                    data-user-name="${user.full_name || 'User'}"
-                                                    data-user-distance="${user.distance_km?.toFixed(1) || '?'}">
-                                                 View Profile
-                                             </button>
-                                         </div>
-                                     </div>
-                                 `;
-                                 
-                                 infowindow.setContent(infoContent);
-                                 infowindow.open(mainMap, marker);
-                                 
-                                 // Add click event listener to the View Profile button after the infowindow is opened
-                                 google.maps.event.addListenerOnce(infowindow, 'domready', () => {
-                                     const viewProfileBtn = document.querySelector('.view-profile-btn');
-                                     if (viewProfileBtn) {
-                                         viewProfileBtn.addEventListener('click', (e) => {
-                                             const userId = e.target.dataset.userId;
-                                             const userRole = e.target.dataset.userRole;
-                                             const userName = e.target.dataset.userName;
-                                             const userDistance = e.target.dataset.userDistance;
-                                             viewUserProfile(userId, userRole, userName, userDistance);
-                                         });
-                                     }
-                                 });
-                             });
-                         } catch(markerError) { console.error(`Error creating marker for ${user.full_name}:`, markerError); }
-                     } else { console.warn(`[loadMapData] User ${user.id} missing coordinates.`); }
-                 });
+                nearbyUsers.forEach(user => {
+                    if (typeof user.latitude === 'number' && typeof user.longitude === 'number') {
+                        const otherCoords = { lat: user.latitude, lng: user.longitude };
+                        try {
+                            const marker = new google.maps.Marker({ 
+                                position: otherCoords, 
+                                map: mainMap, 
+                                title: sanitizeHTML(user.full_name || 'User'), 
+                                icon: { 
+                                    path: google.maps.SymbolPath.CIRCLE, 
+                                    scale: 8, 
+                                    fillColor: targetRole === 'walker' ? '#10B981' : '#F59E0B', 
+                                    fillOpacity: 1, 
+                                    strokeColor: '#ffffff', 
+                                    strokeWeight: 2 
+                                } 
+                            });
+                            
+                            otherUserMarkers.push(marker); 
+                            bounds.extend(otherCoords); 
+                            plottedCount++;
+                            
+                            marker.addListener('click', () => { 
+                                // Create infowindow content safely using DOM methods
+                                const infoDiv = document.createElement('div');
+                                infoDiv.className = 'p-2';
+                                
+                                // Add user name
+                                const nameElement = document.createElement('strong');
+                                nameElement.textContent = user.full_name || 'N/A';
+                                infoDiv.appendChild(nameElement);
+                                infoDiv.appendChild(document.createElement('br'));
+                                
+                                // Add role text
+                                const roleText = document.createTextNode(
+                                    user.role === 'owner' ? 'Pet Owner' : 'Dog Walker'
+                                );
+                                infoDiv.appendChild(roleText);
+                                infoDiv.appendChild(document.createElement('br'));
+                                
+                                // Add distance
+                                const distanceElement = document.createElement('small');
+                                distanceElement.textContent = `Approx. ${user.distance_km?.toFixed(1) ?? '?'} km away`;
+                                infoDiv.appendChild(distanceElement);
+                                
+                                // Add button div
+                                const buttonDiv = document.createElement('div');
+                                buttonDiv.className = 'mt-2';
+                                
+                                // Create view profile button
+                                const viewButton = document.createElement('button');
+                                viewButton.className = 'view-profile-btn bg-purple-600 text-white text-xs px-3 py-1 rounded hover:bg-purple-700';
+                                viewButton.textContent = 'View Profile';
+                                viewButton.dataset.userId = user.id;
+                                viewButton.dataset.userRole = user.role;
+                                viewButton.dataset.userName = user.full_name || 'User';
+                                viewButton.dataset.userDistance = user.distance_km?.toFixed(1) || '?';
+                                
+                                buttonDiv.appendChild(viewButton);
+                                infoDiv.appendChild(buttonDiv);
+                                
+                                // Set content and open
+                                infowindow.setContent(infoDiv);
+                                infowindow.open(mainMap, marker);
+                                
+                                // Add event listener after infowindow is opened
+                                google.maps.event.addListenerOnce(infowindow, 'domready', () => {
+                                    const viewProfileBtn = document.querySelector('.view-profile-btn');
+                                    if (viewProfileBtn) {
+                                        viewProfileBtn.addEventListener('click', (e) => {
+                                            const userId = e.target.dataset.userId;
+                                            const userRole = e.target.dataset.userRole;
+                                            const userName = e.target.dataset.userName;
+                                            const userDistance = e.target.dataset.userDistance;
+                                            viewUserProfile(userId, userRole, userName, userDistance);
+                                        });
+                                    }
+                                });
+                            });
+                        } catch(markerError) { 
+                            console.error(`Error creating marker for ${sanitizeHTML(user.full_name || 'User')}:`, markerError); 
+                        }
+                    } else { 
+                        console.warn(`[loadMapData] User ${user.id} missing coordinates.`); 
+                    }
+                });
             }
 
             // 4. Finalize Map View
@@ -562,7 +871,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         } catch (error) {
             console.error("[loadMapData] Error calling RPC or plotting:", error);
             loadingMsg.textContent = `Error loading nearby users: ${error.message}`;
-            loadingMsg.style.display = 'block'; mapDataLoaded = true;
+            loadingMsg.style.display = 'block'; 
+            mapDataLoaded = true;
         }
     }
 
@@ -658,12 +968,16 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (!loadingMsg) {
                 loadingMsg = document.createElement('p');
                 loadingMsg.className = 'map-loading-message text-gray-600 p-4';
-                mapContainer.innerHTML = ''; // Clear previous content
+                
+                // Clear previous content safely
+                while (mapContainer.firstChild) {
+                    mapContainer.removeChild(mapContainer.firstChild);
+                }
+                
                 mapContainer.appendChild(loadingMsg);
             }
             loadingMsg.textContent = 'Fetching map configuration...';
         }
-
 
         try {
             // Get the current session to obtain the JWT (Authorization token)
@@ -715,39 +1029,64 @@ document.addEventListener('DOMContentLoaded', async () => {
             console.log("API Key received successfully from backend.");
             if (mapContainer) mapContainer.querySelector('.map-loading-message')?.remove(); // Remove loading message
 
-            // Dynamically create the Google Maps script tag
+            // Set up script tag with proper error handling and sanitization
             const script = document.createElement('script');
-            script.id = MAPS_SCRIPT_ID; // Assign the ID
-            // Construct the script URL using the fetched key
+            script.id = MAPS_SCRIPT_ID;
+            
+            // Sanitize the API key (ensure it's a string and contains no unexpected characters)
+            if (typeof apiKey !== 'string' || !/^[A-Za-z0-9_-]+$/.test(apiKey)) {
+                throw new Error('Invalid API key format received from server');
+            }
+            
             script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=initMap&libraries=marker,geometry,places&v=beta`;
             script.async = true;
-            script.defer = true; // Important: ensure HTML is parsed first
+            script.defer = true;
+            
             script.onerror = () => {
                 console.error("!!! Google Maps script failed to load.");
-                mapsApiLoading = false; // Reset flag
-                document.getElementById(MAPS_SCRIPT_ID)?.remove(); // Clean up failed script
-                // Update UI to show failure
-                if (mapContainer) mapContainer.innerHTML = '<p class="map-loading-message text-red-600 p-4">Error: Could not load Google Maps script.</p>';
+                mapsApiLoading = false;
+                const scriptElement = document.getElementById(MAPS_SCRIPT_ID);
+                if (scriptElement) scriptElement.remove();
+                
+                if (mapContainer) {
+                    // Clear and create error message safely
+                    while (mapContainer.firstChild) {
+                        mapContainer.removeChild(mapContainer.firstChild);
+                    }
+                    
+                    const errorMsg = document.createElement('p');
+                    errorMsg.className = 'map-loading-message text-red-600 p-4';
+                    errorMsg.textContent = 'Error: Could not load Google Maps script.';
+                    mapContainer.appendChild(errorMsg);
+                }
             };
 
-            // Append the script to the <head> of the document
             document.head.appendChild(script);
             console.log("Google Maps script tag dynamically appended to head.");
 
         } catch (error) {
             console.error('Error loading Google Maps API key/script:', error);
-            mapsApiLoading = false; // Reset flag on error
-            // Display error in the map container
-            if (mapContainer) mapContainer.innerHTML = `<p class="map-loading-message text-red-600 p-4">Error loading map services: ${error.message}</p>`;
-            // You might want more robust UI error handling here
+            mapsApiLoading = false;
+            
+            if (mapContainer) {
+                // Clear and create error message safely
+                while (mapContainer.firstChild) {
+                    mapContainer.removeChild(mapContainer.firstChild);
+                }
+                
+                const errorMsg = document.createElement('p');
+                errorMsg.className = 'map-loading-message text-red-600 p-4';
+                errorMsg.textContent = `Error loading map services: ${error.message}`;
+                mapContainer.appendChild(errorMsg);
+            }
         }
-        // Note: mapsApiLoading becomes false implicitly when initMap sets googleMapsApiReady=true
-    }   
+    }
 
-    // --- Initialize Dashboard ---
+    // --- Initialize Dashboard with XSS Protection ---
     async function initDashboard() {
         console.log(">>> START initDashboard (profile.js)");
-        // Define DOM elements needed early (ensure they are accessible in this scope)
+        
+        // Define DOM elements needed early
         const loadingState = document.getElementById('loading-state');
         const mainContent = document.getElementById('main-content');
         const profileLoadErrorDiv = document.getElementById('profile-load-error');
@@ -758,37 +1097,34 @@ document.addEventListener('DOMContentLoaded', async () => {
         const walkerContent = document.getElementById('walker-profile-content');
         const mapTitleRole = document.getElementById('map-title-role');
         const mapDescriptionRole = document.getElementById('map-description-role');
-        // Add other needed elements like profileForm, pinLocationButton etc. if not defined globally
         const profileForm = document.getElementById('profile-form');
         const pinLocationButton = document.getElementById('pin-location-btn');
-        const addDogForm = ownerContent?.querySelector('#add-dog-form'); // Use optional chaining
+        const addDogForm = ownerContent?.querySelector('#add-dog-form');
         const ownerDetailsForm = ownerContent?.querySelector('#owner-details-form');
         const walkerDetailsForm = walkerContent?.querySelector('#walker-details-form');
         const pickerMapContainer = document.getElementById('picker-map-container');
-    
-    
+        
         try {
-            // --- Supabase Client and Auth Check ---
-            // Ensure _supabase is initialized (assuming from common.js or global scope)
-            // const _supabase = pawsitiveCommon.createSupabaseClient(); // Make sure this is called appropriately
+            // --- Supabase Auth Check ---
             console.log('Supabase Initialized Check (Dashboard)');
-            const currentUser = await pawsitiveCommon.requireAuth(_supabase); // Make sure _supabase is passed or accessible
+            const currentUser = await pawsitiveCommon.requireAuth(_supabase);
             if (!currentUser) {
-                 console.log("User not authenticated, stopping dashboard init.");
-                 // Redirect logic is likely within requireAuth, but good to check
-                 return;
+                console.log("User not authenticated, stopping dashboard init.");
+                return;
             }
-            pawsitiveCommon.setupLogout(_supabase); // Setup logout button
-    
+            pawsitiveCommon.setupLogout(_supabase);
+            
             // --- Sidebar Navigation Listener ---
             sidebarLinks.forEach(link => {
                 link.addEventListener('click', (e) => {
                     e.preventDefault();
                     const targetSectionId = link.dataset.section;
+                    
                     // Update UI immediately
                     sidebarLinks.forEach(l => l.classList.remove('active'));
                     link.classList.add('active');
                     contentSections.forEach(section => section.classList.remove('active'));
+                    
                     const targetSection = document.getElementById(targetSectionId);
                     if (targetSection) {
                         targetSection.classList.add('active');
@@ -796,126 +1132,135 @@ document.addEventListener('DOMContentLoaded', async () => {
                         console.error(`Target section #${targetSectionId} not found!`);
                         return;
                     }
-    
-                    // --- Handle map loading/state when switching tabs ---
+                    
+                    // Map-specific handling
                     if (targetSectionId === 'map-section') {
                         console.log("Map section activated via click.");
-                        // **Load-on-Demand Option**: If you want to load the script *only* when map is first clicked:
-                        // 1. Add a flag: let mapScriptLoadInitiated = false; (outside this listener)
-                        // 2. Uncomment the following lines and comment out the load call in the main initDashboard flow.
-                        /*
-                        if (!mapScriptLoadInitiated) {
-                            console.log("Map tab clicked for the first time, initiating script load...");
-                            loadGoogleMapsApiKeyAndScript(); // Load script on first click
-                            mapScriptLoadInitiated = true;
-                        } else if (window.googleMapsApiReady && mapInitialized && !mapDataLoaded) {
-                            console.log("Map script ready, map initialized, loading map data on tab click.");
-                            loadMapData(); // If script ready, just load data
-                        } else if (window.googleMapsApiReady && !mapInitialized) {
-                            console.log("Map script ready, but features not initialized yet. Queueing init.");
-                            initializeMapRelatedFeatures(); // Ensure init runs if API ready but map wasn't
-                        } else {
-                             console.log("Map script not ready yet or map data already loaded.");
-                             // Potentially show a loading indicator specific to the map tab
-                        }
-                        */
-    
-                        // **Original Logic (Script load initiated on dashboard load)**:
-                        // Check if map services are ready and initialized, then load data if needed.
                         if (window.googleMapsApiReady && mapInitialized && !mapDataLoaded) {
                             console.log("Map script ready, map initialized, loading map data on tab click.");
                             loadMapData();
                         } else if (window.googleMapsApiReady && !mapInitialized) {
-                             console.log("Map script ready, but features not initialized yet. Queueing init.");
-                             initializeMapRelatedFeatures(); // Make sure it gets initialized if API ready now
+                            console.log("Map script ready, but features not initialized yet. Queueing init.");
+                            initializeMapRelatedFeatures();
                         } else if (!window.googleMapsApiReady) {
                             console.log("Map section clicked, but API script is still loading/pending.");
-                             // Optionally show a loading message in the map area
-                             const mapContainer = document.getElementById('map-container');
-                             if (mapContainer && !mapContainer.querySelector('.map-loading-message')) {
-                                 mapContainer.innerHTML = '<p class="map-loading-message text-gray-600 p-4">Loading map services...</p>';
-                             }
+                            const mapContainer = document.getElementById('map-container');
+                            if (mapContainer && !mapContainer.querySelector('.map-loading-message')) {
+                                // Create loading message safely
+                                const loadingMsg = document.createElement('p');
+                                loadingMsg.className = 'map-loading-message text-gray-600 p-4';
+                                loadingMsg.textContent = 'Loading map services...';
+                                
+                                // Clear container safely
+                                while (mapContainer.firstChild) {
+                                    mapContainer.removeChild(mapContainer.firstChild);
+                                }
+                                
+                                mapContainer.appendChild(loadingMsg);
+                            }
                         } else {
-                             console.log("Map data likely already loaded or map not initialized.");
+                            console.log("Map data likely already loaded or map not initialized.");
                         }
-    
+                        
                         // Hide picker if it was open
-                        pickerMapContainer?.classList.add('hidden');
-                        if(pickerMarker) pickerMarker.setMap(null); // Ensure pickerMarker is accessible
+                        if (pickerMapContainer) pickerMapContainer.classList.add('hidden');
+                        if (pickerMarker) pickerMarker.setMap(null);
                     } else {
                         // Hide picker map if navigating away from profile section
                         if (targetSectionId !== 'profile-section') {
-                            pickerMapContainer?.classList.add('hidden');
-                             if(pickerMarker) pickerMarker.setMap(null); // Ensure pickerMarker is accessible
+                            if (pickerMapContainer) pickerMapContainer.classList.add('hidden');
+                            if (pickerMarker) pickerMarker.setMap(null);
                         }
                     }
                 });
             });
-    
-            // --- Display User Email ---
-            if (userEmailDisplay) userEmailDisplay.textContent = currentUser.email;
-    
-            // --- Fetch Profile ---
-            userProfile = await fetchUserProfile(currentUser.id); // Ensure fetchUserProfile is defined and accessible
-            if (!userProfile) {
-                // Error handled within fetchUserProfile, but ensure loading state is managed
-                loadingState.style.display = 'none';
-                mainContent.classList.add('hidden'); // Keep content hidden if profile fails
-                return; // Stop initialization
+            
+            // --- Display User Email Safely ---
+            if (userEmailDisplay && currentUser.email) {
+                userEmailDisplay.textContent = currentUser.email;
             }
-    
-            // *** INITIATE DYNAMIC SCRIPT LOADING ***
+            
+            // --- Fetch Profile ---
+            userProfile = await fetchUserProfile(currentUser.id);
+            if (!userProfile) {
+                // Error handled within fetchUserProfile
+                if (loadingState) loadingState.style.display = 'none';
+                if (mainContent) mainContent.classList.add('hidden');
+                return;
+            }
+            
+            // --- Initiate map script loading ---
             console.log("    Initiating map API key fetch and script loading...");
-            loadGoogleMapsApiKeyAndScript(); // <<<< THIS IS THE PRIMARY CHANGE <<<<
-            // Note: initializeMapRelatedFeatures will now be triggered internally
-            // by the callback mechanism (initMap -> whenGoogleMapsReady)
-    
-            // --- Setup Non-Map Dependent UI (Runs immediately after profile fetch) ---
+            loadGoogleMapsApiKeyAndScript();
+            
+            // --- Setup Role-Specific UI ---
             if (userProfile.role === 'owner') {
-                ownerContent?.classList.remove('hidden');
+                if (ownerContent) ownerContent.classList.remove('hidden');
                 if (mapTitleRole) mapTitleRole.textContent = 'Dog Walkers';
                 if (mapDescriptionRole) mapDescriptionRole.textContent = 'dog walkers';
-                // Fetch and display dogs immediately
-                const dogs = await fetchUserDogs(currentUser.id); // Ensure fetchUserDogs is defined
-                displayDogs(dogs); // Ensure displayDogs is defined
+                
+                // Fetch and display dogs
+                const dogs = await fetchUserDogs(currentUser.id);
+                displayDogs(dogs);
+                
                 // Add event listeners for owner forms
-                if (addDogForm) addDogForm.addEventListener('submit', handleAddDog); // Ensure handleAddDog is defined
-                if (ownerDetailsForm) ownerDetailsForm.addEventListener('submit', handleOwnerDetailsUpdate); // Ensure handleOwnerDetailsUpdate is defined
+                if (addDogForm) addDogForm.addEventListener('submit', handleAddDog);
+                if (ownerDetailsForm) ownerDetailsForm.addEventListener('submit', handleOwnerDetailsUpdate);
+                
             } else if (userProfile.role === 'walker') {
-                walkerContent?.classList.remove('hidden');
+                if (walkerContent) walkerContent.classList.remove('hidden');
                 if (mapTitleRole) mapTitleRole.textContent = 'Pet Owners';
                 if (mapDescriptionRole) mapDescriptionRole.textContent = 'pet owners';
+                
                 // Add event listener for walker form
-                 if (walkerDetailsForm) walkerDetailsForm.addEventListener('submit', handleWalkerDetailsUpdate); // Ensure handleWalkerDetailsUpdate is defined
+                if (walkerDetailsForm) walkerDetailsForm.addEventListener('submit', handleWalkerDetailsUpdate);
             }
-            // Populate the main profile form
-            populateProfileForm(userProfile); // Ensure populateProfileForm is defined
-            // Add listeners for main profile form and pin button
-            if (profileForm) profileForm.addEventListener('submit', handleProfileUpdate); // Ensure handleProfileUpdate is defined
-            if (pinLocationButton) pinLocationButton.addEventListener('click', initPickerMap); // Ensure initPickerMap is defined
-    
-            // --- Hide Loading State & Show Content ---
-            // This happens after profile is fetched and basic UI setup is done.
-            // Map might still be loading in the background.
-            loadingState.style.display = 'none';
-            mainContent.classList.remove('hidden');
+            
+            // Populate profile form
+            populateProfileForm(userProfile);
+            
+            // Add event listeners
+            if (profileForm) profileForm.addEventListener('submit', handleProfileUpdate);
+            if (pinLocationButton) pinLocationButton.addEventListener('click', initPickerMap);
+            
+            // Show content
+            if (loadingState) loadingState.style.display = 'none';
+            if (mainContent) mainContent.classList.remove('hidden');
+            
             console.log("<<< END initDashboard (profile.js) - Basic setup complete, map script loading initiated.");
-    
+            
         } catch (error) {
             console.error('Error initializing dashboard:', error);
-            // Ensure loading state is hidden on error
-            const loadingState = document.getElementById('loading-state');
-            if(loadingState) loadingState.style.display = 'none';
-            // Show error message
-            const profileLoadErrorDiv = document.getElementById('profile-load-error');
-             if(profileLoadErrorDiv) {
+            
+            // Handle loading state
+            if (loadingState) loadingState.style.display = 'none';
+            
+            // Show error message safely
+            if (profileLoadErrorDiv) {
                 profileLoadErrorDiv.textContent = 'Fatal Error loading dashboard: ' + error.message;
                 profileLoadErrorDiv.classList.remove('hidden');
-             }
-            // Hide main content area
-            const mainContent = document.getElementById('main-content');
-            if(mainContent) mainContent.classList.add('hidden');
+            }
+            
+            // Hide main content
+            if (mainContent) mainContent.classList.add('hidden');
         }
+    }
+
+    // --- Error Handling for Async Functions ---
+    function showProfileError(messageElement, errorMessage) {
+        if (!messageElement) return;
+        
+        // Sanitize and display error message
+        messageElement.textContent = errorMessage || 'An error occurred';
+        messageElement.style.color = 'red';
+    }
+
+    function showProfileSuccess(messageElement, successMessage) {
+        if (!messageElement) return;
+        
+        // Set success message safely
+        messageElement.textContent = successMessage || 'Operation successful';
+        messageElement.style.color = 'green';
     }
 
     // --- Start Dashboard Initialization ---
@@ -1005,23 +1350,57 @@ document.addEventListener('DOMContentLoaded', async () => {
         const slotDiv = document.createElement('div');
         slotDiv.className = 'flex items-center space-x-2';
         
-        slotDiv.innerHTML = `
-            <select class="time-from input-field focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm">
-                <option value="">From</option>
-            </select>
-            <span>to</span>
-            <select class="time-to input-field focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm">
-                <option value="">To</option>
-            </select>
-            <button type="button" class="add-time-slot text-sm text-purple-600 hover:text-purple-800">+ Add</button>
-            ${fromValue ? '<button type="button" class="remove-time-slot text-sm text-red-600 hover:text-red-800 ml-2">× Remove</button>' : ''}
-        `;
+        // Create from time select
+        const fromSelect = document.createElement('select');
+        fromSelect.className = 'time-from input-field focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm';
+        
+        // Add default option
+        const fromDefaultOption = document.createElement('option');
+        fromDefaultOption.value = '';
+        fromDefaultOption.textContent = 'From';
+        fromSelect.appendChild(fromDefaultOption);
+        
+        // Create to time select
+        const toSelect = document.createElement('select');
+        toSelect.className = 'time-to input-field focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm';
+        
+        // Add default option
+        const toDefaultOption = document.createElement('option');
+        toDefaultOption.value = '';
+        toDefaultOption.textContent = 'To';
+        toSelect.appendChild(toDefaultOption);
+        
+        // Add "to" text between selects
+        const toSpan = document.createElement('span');
+        toSpan.textContent = 'to';
+        
+        // Create add button
+        const addButton = document.createElement('button');
+        addButton.type = 'button';
+        addButton.className = 'add-time-slot text-sm text-purple-600 hover:text-purple-800';
+        addButton.textContent = '+ Add';
+        
+        // Add elements to slot div
+        slotDiv.appendChild(fromSelect);
+        slotDiv.appendChild(toSpan);
+        slotDiv.appendChild(toSelect);
+        slotDiv.appendChild(addButton);
+        
+        // Add remove button if needed
+        if (fromValue) {
+            const removeButton = document.createElement('button');
+            removeButton.type = 'button';
+            removeButton.className = 'remove-time-slot text-sm text-red-600 hover:text-red-800 ml-2';
+            removeButton.textContent = '× Remove';
+            slotDiv.appendChild(removeButton);
+            
+            // Add remove event listener
+            removeButton.addEventListener('click', () => {
+                container.removeChild(slotDiv);
+            });
+        }
         
         container.appendChild(slotDiv);
-        
-        // Add time options to the selects
-        const fromSelect = slotDiv.querySelector('.time-from');
-        const toSelect = slotDiv.querySelector('.time-to');
         
         // Fill the time options
         for (let h = 0; h < 24; h++) {
@@ -1045,17 +1424,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
         
-        // Add event listeners
-        slotDiv.querySelector('.add-time-slot').addEventListener('click', () => {
+        // Add event listener for add button
+        addButton.addEventListener('click', () => {
             addTimeSlotElement(container);
         });
-        
-        const removeBtn = slotDiv.querySelector('.remove-time-slot');
-        if (removeBtn) {
-            removeBtn.addEventListener('click', () => {
-                container.removeChild(slotDiv);
-            });
-        }
     }
     
     // Collect availability data from the UI and format as JSON
@@ -1234,22 +1606,22 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Function to view a user's profile
     async function viewUserProfile(userId, userRole, userName, userDistance) {
-        console.log(`[viewUserProfile] Viewing profile for ${userRole} ${userName} (${userId})`);
+        console.log(`[viewUserProfile] Viewing profile for ${sanitizeHTML(userRole)} ${sanitizeHTML(userName)} (${userId})`);
         
         if (!userProfileModal) {
             console.error("[viewUserProfile] Modal element not found");
             return;
         }
         
-        // Reset modal state
-        modalUserName.textContent = userName || 'User';
-        modalUserRole.textContent = userRole === 'owner' ? 'Pet Owner' : 'Dog Walker';
-        modalUserDistance.textContent = `${userDistance} km away`;
+        // Reset modal state - use textContent to safely set content
+        if (modalUserName) modalUserName.textContent = userName || 'User';
+        if (modalUserRole) modalUserRole.textContent = userRole === 'owner' ? 'Pet Owner' : 'Dog Walker';
+        if (modalUserDistance) modalUserDistance.textContent = `${userDistance} km away`;
         
-        modalLoading.classList.remove('hidden');
-        modalError.classList.add('hidden');
-        modalWalkerContent.classList.add('hidden');
-        modalOwnerContent.classList.add('hidden');
+        if (modalLoading) modalLoading.classList.remove('hidden');
+        if (modalError) modalError.classList.add('hidden');
+        if (modalWalkerContent) modalWalkerContent.classList.add('hidden');
+        if (modalOwnerContent) modalOwnerContent.classList.add('hidden');
         
         // Show modal
         userProfileModal.classList.remove('hidden');
@@ -1278,12 +1650,18 @@ document.addEventListener('DOMContentLoaded', async () => {
                 await populateOwnerModal(profileData, userEmail, userId);
             }
             
-            modalLoading.classList.add('hidden');
+            if (modalLoading) modalLoading.classList.add('hidden');
             
         } catch (error) {
             console.error('[viewUserProfile] Error:', error);
-            modalLoading.classList.add('hidden');
-            modalError.classList.remove('hidden');
+            if (modalLoading) modalLoading.classList.add('hidden');
+            if (modalError) modalError.classList.remove('hidden');
+            
+            // Set error message safely
+            const errorMessageEl = modalError.querySelector('.error-message');
+            if (errorMessageEl) {
+                errorMessageEl.textContent = `Error loading profile: ${error.message}`;
+            }
         }
     }
     
@@ -1297,16 +1675,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         const walkerMobile = document.getElementById('modal-walker-mobile');
         const walkerAvailability = document.getElementById('modal-walker-availability');
         
-        // Set content
+        // Set content safely using textContent
         if (walkerAbout) walkerAbout.textContent = profile.about_me || 'No information provided';
         if (walkerExpYears) walkerExpYears.textContent = profile.experience_years ? `${profile.experience_years} years` : 'Not specified';
         if (walkerExpSummary) walkerExpSummary.textContent = profile.experience_summary || 'No experience summary provided';
         if (walkerEmail) walkerEmail.textContent = email;
         if (walkerMobile) walkerMobile.textContent = profile.mobile || 'Not provided';
         
-        // Handle availability schedule
+        // Handle availability schedule safely
         if (walkerAvailability) {
-            walkerAvailability.innerHTML = '';
+            // Clear previous content safely
+            while (walkerAvailability.firstChild) {
+                walkerAvailability.removeChild(walkerAvailability.firstChild);
+            }
             
             if (profile.availability_schedule) {
                 try {
@@ -1318,34 +1699,46 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const days = Object.keys(schedule).filter(day => day !== 'recurring');
                     
                     if (days.length === 0) {
-                        walkerAvailability.innerHTML = '<p class="text-gray-500 col-span-2">No availability information provided</p>';
+                        const noAvailMsg = document.createElement('p');
+                        noAvailMsg.className = 'text-gray-500 col-span-2';
+                        noAvailMsg.textContent = 'No availability information provided';
+                        walkerAvailability.appendChild(noAvailMsg);
                     } else {
                         days.forEach(day => {
                             const timeSlots = schedule[day];
                             const dayElement = document.createElement('div');
                             
-                            let timesHtml = '';
+                            // Create day header
+                            const dayHeader = document.createElement('div');
+                            dayHeader.className = 'font-medium';
+                            dayHeader.textContent = day;
+                            dayElement.appendChild(dayHeader);
+                            
+                            // Add time slots
                             timeSlots.forEach(slot => {
                                 const [from, to] = slot.split('-');
-                                timesHtml += `<div class="text-sm">${formatTimeDisplay(from)} - ${formatTimeDisplay(to)}</div>`;
+                                const timeElement = document.createElement('div');
+                                timeElement.className = 'text-sm';
+                                timeElement.textContent = `${formatTimeDisplay(from)} - ${formatTimeDisplay(to)}`;
+                                dayElement.appendChild(timeElement);
                             });
                             
-                            dayElement.innerHTML = `
-                                <div class="mb-2">
-                                    <div class="font-medium">${day}</div>
-                                    ${timesHtml}
-                                </div>
-                            `;
-                            
+                            dayElement.className = 'mb-2';
                             walkerAvailability.appendChild(dayElement);
                         });
                     }
                 } catch (error) {
                     console.error('Error parsing availability schedule:', error);
-                    walkerAvailability.innerHTML = '<p class="text-gray-500 col-span-2">Could not load availability information</p>';
+                    const errorMsg = document.createElement('p');
+                    errorMsg.className = 'text-gray-500 col-span-2';
+                    errorMsg.textContent = 'Could not load availability information';
+                    walkerAvailability.appendChild(errorMsg);
                 }
             } else {
-                walkerAvailability.innerHTML = '<p class="text-gray-500 col-span-2">No availability information provided</p>';
+                const noAvailMsg = document.createElement('p');
+                noAvailMsg.className = 'text-gray-500 col-span-2';
+                noAvailMsg.textContent = 'No availability information provided';
+                walkerAvailability.appendChild(noAvailMsg);
             }
         }
         
@@ -1364,23 +1757,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         const ownerDogs = document.getElementById('modal-owner-dogs');
         const noDogs = document.getElementById('modal-no-dogs');
         
-        // Set content
+        // Set content safely using textContent
         if (ownerEmail) ownerEmail.textContent = email;
         if (ownerMobile) ownerMobile.textContent = profile.mobile || 'Not provided';
         if (ownerAddress) ownerAddress.textContent = profile.address || 'Not provided';
+        if (ownerCommunication) ownerCommunication.textContent = profile.preferred_communication || 'Not specified';
+        if (ownerNotes) ownerNotes.textContent = profile.owner_notes_for_walker || 'No notes provided';
         
-        if (ownerCommunication) {
-            ownerCommunication.textContent = profile.preferred_communication || 'Not specified';
-        }
-        
-        if (ownerNotes) {
-            ownerNotes.textContent = profile.owner_notes_for_walker || 'No notes provided';
-        }
-        
-        // Fetch and display owner's dogs
+        // Fetch and display owner's dogs safely
         if (ownerDogs) {
-            // Clear previous dogs
-            ownerDogs.innerHTML = '';
+            // Clear previous dogs safely
+            while (ownerDogs.firstChild) {
+                ownerDogs.removeChild(ownerDogs.firstChild);
+            }
             
             try {
                 const { data: dogs, error } = await _supabase
@@ -1396,25 +1785,109 @@ document.addEventListener('DOMContentLoaded', async () => {
                     if (noDogs) noDogs.classList.add('hidden');
                     
                     dogs.forEach(dog => {
+                        // Create dog card element
                         const dogCard = document.createElement('div');
                         dogCard.className = 'border border-gray-200 rounded-lg p-4';
                         
-                        dogCard.innerHTML = `
-                            <h4 class="font-bold text-lg text-gray-800">${dog.name}</h4>
-                            <div class="grid grid-cols-2 gap-2 mt-2 text-sm">
-                                ${dog.breed ? `<div><span class="font-medium">Breed:</span> ${dog.breed}</div>` : ''}
-                                ${dog.age ? `<div><span class="font-medium">Age:</span> ${dog.age} years</div>` : ''}
-                                ${dog.gender ? `<div><span class="font-medium">Gender:</span> ${dog.gender}</div>` : ''}
-                                ${dog.weight ? `<div><span class="font-medium">Weight:</span> ${dog.weight} kg</div>` : ''}
-                            </div>
-                            
-                            ${dog.temperament && dog.temperament.length > 0 ? 
-                                `<div class="mt-2 text-sm"><span class="font-medium">Temperament:</span> ${Array.isArray(dog.temperament) ? dog.temperament.join(', ') : dog.temperament}</div>` : ''}
-                            
-                            ${dog.special_needs ? `<div class="mt-2 text-sm"><span class="font-medium">Special Needs:</span> ${dog.special_needs}</div>` : ''}
-                            ${dog.vet_contact ? `<div class="mt-2 text-sm"><span class="font-medium">Vet Contact:</span> ${dog.vet_contact}</div>` : ''}
-                            ${dog.preferred_route ? `<div class="mt-2 text-sm"><span class="font-medium">Preferred Route:</span> ${dog.preferred_route}</div>` : ''}
-                        `;
+                        // Add dog name
+                        const dogName = document.createElement('h4');
+                        dogName.className = 'font-bold text-lg text-gray-800';
+                        dogName.textContent = dog.name;
+                        dogCard.appendChild(dogName);
+                        
+                        // Create details grid
+                        const detailsGrid = document.createElement('div');
+                        detailsGrid.className = 'grid grid-cols-2 gap-2 mt-2 text-sm';
+                        
+                        // Add details safely
+                        if (dog.breed) {
+                            const breedDiv = document.createElement('div');
+                            const breedLabel = document.createElement('span');
+                            breedLabel.className = 'font-medium';
+                            breedLabel.textContent = 'Breed: ';
+                            breedDiv.appendChild(breedLabel);
+                            breedDiv.appendChild(document.createTextNode(dog.breed));
+                            detailsGrid.appendChild(breedDiv);
+                        }
+                        
+                        if (dog.age) {
+                            const ageDiv = document.createElement('div');
+                            const ageLabel = document.createElement('span');
+                            ageLabel.className = 'font-medium';
+                            ageLabel.textContent = 'Age: ';
+                            ageDiv.appendChild(ageLabel);
+                            ageDiv.appendChild(document.createTextNode(`${dog.age} years`));
+                            detailsGrid.appendChild(ageDiv);
+                        }
+                        
+                        if (dog.gender) {
+                            const genderDiv = document.createElement('div');
+                            const genderLabel = document.createElement('span');
+                            genderLabel.className = 'font-medium';
+                            genderLabel.textContent = 'Gender: ';
+                            genderDiv.appendChild(genderLabel);
+                            genderDiv.appendChild(document.createTextNode(dog.gender));
+                            detailsGrid.appendChild(genderDiv);
+                        }
+                        
+                        if (dog.weight) {
+                            const weightDiv = document.createElement('div');
+                            const weightLabel = document.createElement('span');
+                            weightLabel.className = 'font-medium';
+                            weightLabel.textContent = 'Weight: ';
+                            weightDiv.appendChild(weightLabel);
+                            weightDiv.appendChild(document.createTextNode(`${dog.weight} kg`));
+                            detailsGrid.appendChild(weightDiv);
+                        }
+                        
+                        dogCard.appendChild(detailsGrid);
+                        
+                        // Add other details safely
+                        if (dog.temperament && dog.temperament.length > 0) {
+                            const tempDiv = document.createElement('div');
+                            tempDiv.className = 'mt-2 text-sm';
+                            const tempLabel = document.createElement('span');
+                            tempLabel.className = 'font-medium';
+                            tempLabel.textContent = 'Temperament: ';
+                            tempDiv.appendChild(tempLabel);
+                            tempDiv.appendChild(document.createTextNode(
+                                Array.isArray(dog.temperament) ? dog.temperament.join(', ') : dog.temperament
+                            ));
+                            dogCard.appendChild(tempDiv);
+                        }
+                        
+                        if (dog.special_needs) {
+                            const needsDiv = document.createElement('div');
+                            needsDiv.className = 'mt-2 text-sm';
+                            const needsLabel = document.createElement('span');
+                            needsLabel.className = 'font-medium';
+                            needsLabel.textContent = 'Special Needs: ';
+                            needsDiv.appendChild(needsLabel);
+                            needsDiv.appendChild(document.createTextNode(dog.special_needs));
+                            dogCard.appendChild(needsDiv);
+                        }
+                        
+                        if (dog.vet_contact) {
+                            const vetDiv = document.createElement('div');
+                            vetDiv.className = 'mt-2 text-sm';
+                            const vetLabel = document.createElement('span');
+                            vetLabel.className = 'font-medium';
+                            vetLabel.textContent = 'Vet Contact: ';
+                            vetDiv.appendChild(vetLabel);
+                            vetDiv.appendChild(document.createTextNode(dog.vet_contact));
+                            dogCard.appendChild(vetDiv);
+                        }
+                        
+                        if (dog.preferred_route) {
+                            const routeDiv = document.createElement('div');
+                            routeDiv.className = 'mt-2 text-sm';
+                            const routeLabel = document.createElement('span');
+                            routeLabel.className = 'font-medium';
+                            routeLabel.textContent = 'Preferred Route: ';
+                            routeDiv.appendChild(routeLabel);
+                            routeDiv.appendChild(document.createTextNode(dog.preferred_route));
+                            dogCard.appendChild(routeDiv);
+                        }
                         
                         ownerDogs.appendChild(dogCard);
                     });
@@ -1423,7 +1896,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             } catch (error) {
                 console.error('Error fetching dogs:', error);
-                ownerDogs.innerHTML = `<p class="text-red-500">Could not load dog information</p>`;
+                const errorMsg = document.createElement('p');
+                errorMsg.className = 'text-red-500';
+                errorMsg.textContent = 'Could not load dog information';
+                ownerDogs.appendChild(errorMsg);
             }
         }
         
