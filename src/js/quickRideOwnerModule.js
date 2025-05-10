@@ -14,7 +14,9 @@
     // Ensure pawsitiveCommon and its utilities are loaded
     if (!window.pawsitiveCommon || !window.pawsitiveCommon.createSafeElement || !window.pawsitiveCommon.sanitizeHTML) {
         console.error("[QuickRideOwnerModule] pawsitiveCommon or its utilities (createSafeElement, sanitizeHTML) not found. Module cannot function correctly.");
-        return; 
+        // Optionally, prevent further execution or set a flag
+        App.QuickRideOwner = { init: () => {}, refreshMyRides: () => {} };
+        return;
     }
     const { createSafeElement, sanitizeHTML } = window.pawsitiveCommon;
 
@@ -26,7 +28,7 @@
             return `${date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })} at ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}`;
         } catch (e) {
             console.error("Error formatting date:", e);
-            return dateTimeString; 
+            return dateTimeString;
         }
     }
 
@@ -41,13 +43,13 @@
             default: return 'bg-gray-100 text-gray-800';
         }
     }
-    
+
     function displayMyRides(rides) {
         if (!_domElements.myRidesListDiv || !_domElements.noMyRidesMessage) {
             console.error("[QuickRideOwnerModule] Rides list or no rides message element not found.");
             return;
         }
-        _domElements.myRidesListDiv.innerHTML = ''; 
+        _domElements.myRidesListDiv.innerHTML = '';
 
         if (!rides || rides.length === 0) {
             _domElements.noMyRidesMessage.classList.remove('hidden');
@@ -58,31 +60,52 @@
 
         rides.forEach(ride => {
             const card = createSafeElement('div', { className: 'quickride-card p-4 border rounded-lg shadow mb-4 bg-white' });
-            
+
             const header = createSafeElement('div', { className: 'flex justify-between items-center mb-2' });
             const dogNameText = ride.dogs && ride.dogs.name ? sanitizeHTML(ride.dogs.name) : 'Dog (Name N/A)';
             header.appendChild(createSafeElement('h4', { className: 'text-lg font-semibold text-purple-700' }, `Walk for ${dogNameText}`));
-            
+
             const statusBadgeClass = getStatusBadgeClass(ride.status);
             const statusText = sanitizeHTML(ride.status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()));
             header.appendChild(createSafeElement('span', {className: `px-2 py-1 text-xs font-medium rounded-full ${statusBadgeClass}`}, statusText));
             card.appendChild(header);
 
             const detailsGrid = createSafeElement('div', { className: 'grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-sm text-gray-600' });
-            detailsGrid.appendChild(createSafeElement('p', {}, `<strong>Time:</strong> ${formatRideDateTime(ride.walk_datetime)}`));
-            detailsGrid.appendChild(createSafeElement('p', {}, `<strong>Pay:</strong> ₹${sanitizeHTML(String(ride.pay_amount))}`));
+
+            // MODIFIED: Use array of nodes for content with <strong>
+            detailsGrid.appendChild(
+                createSafeElement('p', {}, [
+                    createSafeElement('strong', {}, 'Time:'),
+                    document.createTextNode(` ${formatRideDateTime(ride.walk_datetime)}`)
+                ])
+            );
+            detailsGrid.appendChild(
+                createSafeElement('p', {}, [
+                    createSafeElement('strong', {}, 'Pay:'),
+                    document.createTextNode(` ₹${sanitizeHTML(String(ride.pay_amount))}`)
+                ])
+            );
             if (ride.instructions) {
-                detailsGrid.appendChild(createSafeElement('p', { className: 'sm:col-span-2 mt-1' }, `<strong>Instructions:</strong> ${sanitizeHTML(ride.instructions)}`));
+                detailsGrid.appendChild(
+                    createSafeElement('p', { className: 'sm:col-span-2 mt-1' }, [
+                        createSafeElement('strong', {}, 'Instructions:'),
+                        document.createTextNode(` ${sanitizeHTML(ride.instructions)}`)
+                    ])
+                );
             }
-            
+
             const acceptedWalkerName = ride.accepted_walker && ride.accepted_walker.full_name ? sanitizeHTML(ride.accepted_walker.full_name) : null;
             let walkerInfoPara;
             if (acceptedWalkerName) {
                  walkerInfoPara = createSafeElement('p', { className: 'sm:col-span-2 mt-1 text-green-700 font-medium' });
-                 walkerInfoPara.innerHTML = `<strong>Accepted by:</strong> ${acceptedWalkerName}`;
+                 // MODIFIED: Use array of nodes
+                 walkerInfoPara.appendChild(createSafeElement('strong', {}, 'Accepted by:'));
+                 walkerInfoPara.appendChild(document.createTextNode(` ${acceptedWalkerName}`));
             } else if (ride.accepted_walker_id && ride.status === 'accepted') {
                  walkerInfoPara = createSafeElement('p', { className: 'sm:col-span-2 mt-1 text-green-700 font-medium' });
-                 walkerInfoPara.innerHTML = `<strong>Accepted by:</strong> Walker (ID: ${sanitizeHTML(ride.accepted_walker_id.substring(0,8))}...)`;
+                 // MODIFIED: Use array of nodes
+                 walkerInfoPara.appendChild(createSafeElement('strong', {}, 'Accepted by:'));
+                 walkerInfoPara.appendChild(document.createTextNode(` Walker (ID: ${sanitizeHTML(ride.accepted_walker_id.substring(0,8))}...)`));
             }
             if (walkerInfoPara) detailsGrid.appendChild(walkerInfoPara);
 
@@ -104,17 +127,16 @@
                 actionsDiv.appendChild(cancelButton);
             }
 
-            // *** MODIFIED: Add "View Walker Profile" button if accepted ***
             if (ride.status === 'accepted' && ride.accepted_walker_id) {
                 const viewWalkerButton = createSafeElement('button', {
                     className: 'view-walker-profile-btn bg-purple-100 hover:bg-purple-200 text-purple-700 text-xs font-medium py-1.5 px-3 rounded-md transition',
                     'data-walker-id': ride.accepted_walker_id,
-                    'data-walker-name': acceptedWalkerName || 'Walker' // Fallback name
+                    'data-walker-name': acceptedWalkerName || 'Walker'
                 }, 'View Walker Profile');
                 actionsDiv.appendChild(viewWalkerButton);
             }
-            
-            if (actionsDiv.hasChildNodes()) { 
+
+            if (actionsDiv.hasChildNodes()) {
                 card.appendChild(actionsDiv);
             }
 
@@ -124,7 +146,7 @@
 
     function populateDogSelect() {
         if (!_domElements.dogSelect) return;
-        _domElements.dogSelect.innerHTML = '<option value="">Select your dog</option>'; 
+        _domElements.dogSelect.innerHTML = '<option value="">Select your dog</option>';
 
         if (_ownerDogs.length === 0) {
             _domElements.dogSelect.innerHTML = '<option value="">No dogs found. Please add a dog in your Profile.</option>';
@@ -142,7 +164,7 @@
         if (!_supabase || !_currentUser || !_domElements.noMyRidesMessage) return;
         _domElements.noMyRidesMessage.textContent = 'Loading your rides...';
         _domElements.noMyRidesMessage.classList.remove('hidden');
-        _domElements.noMyRidesMessage.style.color = 'inherit'; 
+        _domElements.noMyRidesMessage.style.color = 'inherit';
 
         try {
             const { data, error } = await _supabase
@@ -156,14 +178,14 @@
                     status,
                     accepted_walker_id,
                     created_at,
-                    dogs (name), 
-                    accepted_walker:profiles!quick_rides_accepted_walker_id_fkey (full_name) 
+                    dogs (name),
+                    accepted_walker:profiles!quick_rides_accepted_walker_id_fkey (full_name)
                 `)
                 .eq('owner_id', _currentUser.id)
-                .order('created_at', { ascending: false }); 
+                .order('created_at', { ascending: false });
 
             if (error) throw error;
-            
+
             displayMyRides(data);
 
         } catch (error) {
@@ -192,7 +214,7 @@
             _ownerDogs = data || [];
         } catch (error) {
             console.error('[QuickRideOwnerModule] Error fetching owner dogs:', error);
-            _ownerDogs = []; 
+            _ownerDogs = [];
         }
     }
 
@@ -253,8 +275,8 @@
             _domElements.formMessage.className = 'quickride-form-message ml-4 text-sm text-green-600';
             _domElements.newRideForm.reset();
             toggleNewRideForm(false);
-            fetchMyRides(); 
-            
+            fetchMyRides();
+
             setTimeout(() => {
                 if (_domElements.formMessage.textContent === 'Quick Ride posted successfully!') {
                     _domElements.formMessage.textContent = '';
@@ -270,22 +292,22 @@
             _domElements.submitQuickRideBtn.textContent = 'Post Ride';
         }
     }
-    
+
     async function handleCancelRide(event) {
-        const rideId = event.target.closest('button')?.dataset.rideId; 
+        const rideId = event.target.closest('button')?.dataset.rideId;
         if (!rideId) return;
 
         const confirmCancel = confirm('Are you sure you want to cancel this Quick Ride? This action cannot be undone.');
         if (!confirmCancel) return;
-        
+
         const cancelButton = event.target.closest('button');
         if(cancelButton) cancelButton.disabled = true;
 
-        if (_domElements.formMessage) {
+        if (_domElements.formMessage) { // Use formMessage for feedback, as it's consistently present
             _domElements.formMessage.textContent = 'Cancelling ride...';
-            _domElements.formMessage.className = 'quickride-form-message ml-4 text-sm text-gray-600'; 
+            _domElements.formMessage.className = 'quickride-form-message ml-4 text-sm text-gray-600';
         }
-            
+
         try {
             const { data, error } = await _supabase.rpc('cancel_quick_ride_owner', { p_ride_id: rideId });
 
@@ -295,7 +317,7 @@
                 _domElements.formMessage.textContent = 'Ride cancelled successfully.';
                 _domElements.formMessage.className = 'quickride-form-message ml-4 text-sm text-green-600';
             }
-            fetchMyRides(); 
+            fetchMyRides();
 
             setTimeout(() => {
                 if (_domElements.formMessage && _domElements.formMessage.textContent === 'Ride cancelled successfully.') {
@@ -309,26 +331,24 @@
                 _domElements.formMessage.textContent = `Error cancelling ride: ${error.message}`;
                 _domElements.formMessage.className = 'quickride-form-message ml-4 text-sm text-red-600';
             }
-             if(cancelButton) cancelButton.disabled = false; 
+             if(cancelButton) cancelButton.disabled = false;
         }
     }
 
-    // *** NEW: Handler for viewing walker profile ***
     function handleViewWalkerProfileClick(event) {
         const button = event.target.closest('.view-walker-profile-btn');
         if (!button) return;
 
         const walkerId = button.dataset.walkerId;
-        const walkerName = button.dataset.walkerName; // This comes from the data attribute set in displayMyRides
+        const walkerName = button.dataset.walkerName;
 
         if (!walkerId) {
             console.warn("[QuickRideOwnerModule] Walker ID not found on button.");
             return;
         }
 
-        // Call the ProfileModalModule's show method
         if (App.ProfileModal && App.ProfileModal.show) {
-            App.ProfileModal.show(walkerId, 'walker', walkerName, null); // Distance is null from owner's perspective here
+            App.ProfileModal.show(walkerId, 'walker', walkerName, null);
         } else {
             console.error("[QuickRideOwnerModule] App.ProfileModal.show function not found. Cannot display walker profile.");
             alert("Profile viewing feature is temporarily unavailable.");
@@ -339,18 +359,18 @@
         if (!_domElements.newRideForm || !_domElements.formMessage || !_domElements.dateTimeInput) return;
         if (show) {
             _domElements.newRideForm.classList.remove('hidden');
-            _domElements.formMessage.textContent = ''; 
-            _domElements.newRideForm.reset(); 
-            
+            _domElements.formMessage.textContent = '';
+            _domElements.newRideForm.reset();
+
             const now = new Date();
-            now.setMinutes(now.getMinutes() + 15); 
+            now.setMinutes(now.getMinutes() + 15);
             const year = now.getFullYear();
             const month = (now.getMonth() + 1).toString().padStart(2, '0');
             const day = now.getDate().toString().padStart(2, '0');
             const hours = now.getHours().toString().padStart(2, '0');
             const minutes = now.getMinutes().toString().padStart(2, '0');
             _domElements.dateTimeInput.min = `${year}-${month}-${day}T${hours}:${minutes}`;
-            _domElements.dateTimeInput.value = `${year}-${month}-${day}T${hours}:${minutes}`; 
+            _domElements.dateTimeInput.value = `${year}-${month}-${day}T${hours}:${minutes}`;
 
             if(_ownerDogs.length === 0 && _domElements.dogSelect) {
                 _domElements.dogSelect.innerHTML = '<option value="">Please add a dog in your Profile first.</option>';
@@ -386,25 +406,24 @@
                 _domElements.newRideForm.addEventListener('submit', handleNewRideFormSubmit);
             }
 
-            // Modified event listener for myRidesListDiv
             if (_domElements.myRidesListDiv) {
                 _domElements.myRidesListDiv.addEventListener('click', (e) => {
                     const cancelButton = e.target.closest('.cancel-ride-btn');
-                    const viewWalkerButton = e.target.closest('.view-walker-profile-btn'); // Listen for new button
+                    const viewWalkerButton = e.target.closest('.view-walker-profile-btn');
 
                     if (cancelButton) {
-                        e.preventDefault(); 
+                        e.preventDefault();
                         handleCancelRide(e);
-                    } else if (viewWalkerButton) { // Handle new button click
+                    } else if (viewWalkerButton) {
                         e.preventDefault();
                         handleViewWalkerProfileClick(e);
                     }
                 });
             }
-            
+
             fetchOwnerDogs().then(() => {
-                populateDogSelect(); 
-                if (_domElements.newRideForm.classList.contains('hidden') === false) { 
+                populateDogSelect();
+                if (_domElements.newRideForm.classList.contains('hidden') === false) {
                     if(_ownerDogs.length === 0 && _domElements.dogSelect) {
                         if (_domElements.submitQuickRideBtn) _domElements.submitQuickRideBtn.disabled = true;
                     } else if (_domElements.dogSelect) {

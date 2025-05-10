@@ -18,6 +18,8 @@
     // Ensure pawsitiveCommon and its utilities are loaded
     if (!window.pawsitiveCommon || !window.pawsitiveCommon.createSafeElement || !window.pawsitiveCommon.sanitizeHTML) {
         console.error("[QuickRideWalkerModule] pawsitiveCommon or its utilities not found.");
+        // Optionally, prevent further execution or set a flag
+        App.QuickRideWalker = { init: () => {}, onViewActivated: () => {}, onViewDeactivated: () => {} };
         return;
     }
     const { createSafeElement, sanitizeHTML } = window.pawsitiveCommon;
@@ -68,17 +70,44 @@
             card.appendChild(createSafeElement('h4', { className: 'font-semibold text-md text-green-800 mb-1' }, `${dogName}'s Walk with ${ownerName}`));
             
             const detailsContainer = createSafeElement('div', {className: 'space-y-1 text-xs text-gray-700'});
-            detailsContainer.appendChild(createSafeElement('p', {}, `<strong>Scheduled for:</strong> ${formatRideDateTime(ride.walk_datetime)}`));
-            detailsContainer.appendChild(createSafeElement('p', {}, `<strong>Your Payout:</strong> ₹${sanitizeHTML(String(ride.pay_amount))}`));
+
+            // MODIFIED: Use array of nodes for content with <strong>
+            detailsContainer.appendChild(
+                createSafeElement('p', {}, [
+                    createSafeElement('strong', {}, 'Scheduled for:'),
+                    document.createTextNode(` ${formatRideDateTime(ride.walk_datetime)}`)
+                ])
+            );
+            detailsContainer.appendChild(
+                createSafeElement('p', {}, [
+                    createSafeElement('strong', {}, 'Your Payout:'),
+                    document.createTextNode(` ₹${sanitizeHTML(String(ride.pay_amount))}`)
+                ])
+            );
             
             if (ride.owner && ride.owner.mobile) {
-                 detailsContainer.appendChild(createSafeElement('p', {}, `<strong>Owner Contact:</strong> ${sanitizeHTML(ride.owner.mobile)}`));
+                 detailsContainer.appendChild(
+                    createSafeElement('p', {}, [
+                        createSafeElement('strong', {}, 'Owner Contact:'),
+                        document.createTextNode(` ${sanitizeHTML(ride.owner.mobile)}`)
+                    ])
+                 );
             }
             if (ride.owner && ride.owner.address) {
-                 detailsContainer.appendChild(createSafeElement('p', {}, `<strong>Location:</strong> ${sanitizeHTML(ride.owner.address)}`));
+                 detailsContainer.appendChild(
+                    createSafeElement('p', {}, [
+                        createSafeElement('strong', {}, 'Location:'),
+                        document.createTextNode(` ${sanitizeHTML(ride.owner.address)}`)
+                    ])
+                 );
             }
              if (ride.instructions) {
-                detailsContainer.appendChild(createSafeElement('p', {className: 'mt-1 pt-1 border-t border-green-200'}, `<strong>Instructions:</strong> ${sanitizeHTML(ride.instructions)}`));
+                detailsContainer.appendChild(
+                    createSafeElement('p', {className: 'mt-1 pt-1 border-t border-green-200'}, [
+                        createSafeElement('strong', {}, 'Instructions:'),
+                        document.createTextNode(` ${sanitizeHTML(ride.instructions)}`)
+                    ])
+                );
             }
 
             card.appendChild(detailsContainer);
@@ -116,16 +145,30 @@
             card.appendChild(header);
 
             const detailsGrid = createSafeElement('div', { className: 'grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-gray-700 mb-3' });
-            detailsGrid.appendChild(createSafeElement('p', {}, `<strong>Owner:</strong> ${sanitizeHTML(ride.owner_full_name)}`));
+            
+            // MODIFIED: Use array of nodes for content with <strong>
+            detailsGrid.appendChild(
+                createSafeElement('p', {}, [
+                    createSafeElement('strong', {}, 'Owner:'),
+                    document.createTextNode(` ${sanitizeHTML(ride.owner_full_name)}`)
+                ])
+            );
             detailsGrid.appendChild(createSafeElement('p', {className: 'text-right'}, `~ ${parseFloat(ride.distance_km).toFixed(1)} km away`));
-            detailsGrid.appendChild(createSafeElement('p', { className: 'col-span-2' }, `<strong>Time:</strong> ${formatRideDateTime(ride.walk_datetime)}`));
+            detailsGrid.appendChild(
+                createSafeElement('p', { className: 'col-span-2' }, [
+                    createSafeElement('strong', {}, 'Time:'),
+                    document.createTextNode(` ${formatRideDateTime(ride.walk_datetime)}`)
+                ])
+            );
             card.appendChild(detailsGrid);
             
             if (ride.instructions) {
                  card.appendChild(
-                    createSafeElement('div', {className: 'text-xs text-gray-600 italic mb-3 p-2 bg-gray-50 rounded-md border border-gray-200'}, 
-                        `<strong>Instructions:</strong> ${sanitizeHTML(ride.instructions.substring(0,120))}${ride.instructions.length > 120 ? '...' : '' }`
-                    ));
+                    createSafeElement('div', {className: 'text-xs text-gray-600 italic mb-3 p-2 bg-gray-50 rounded-md border border-gray-200'}, [
+                        createSafeElement('strong', {}, 'Instructions:'), // MODIFIED
+                        document.createTextNode(` ${sanitizeHTML(ride.instructions.substring(0,120))}${ride.instructions.length > 120 ? '...' : '' }`)
+                    ])
+                );
             }
 
             const actionsDiv = createSafeElement('div', { className: 'flex flex-col sm:flex-row items-center sm:space-x-2 space-y-2 sm:space-y-0 mt-3 pt-3 border-t border-gray-200' });
@@ -263,7 +306,6 @@
             return;
         }
         
-        // *** MODIFIED: Call ProfileModalModule ***
         if (App.ProfileModal && App.ProfileModal.show) {
             App.ProfileModal.show(ownerId, 'owner', ownerName, distance);
         } else {
@@ -348,7 +390,7 @@
             if (_domElements.availableRidesListDiv) {
                 _domElements.availableRidesListDiv.addEventListener('click', eventHandler);
             }
-            if(_domElements.myAcceptedRidesListDiv) { // Also add listener to the accepted rides list for its view profile buttons
+            if(_domElements.myAcceptedRidesListDiv) { 
                 _domElements.myAcceptedRidesListDiv.addEventListener('click', eventHandler);
             }
         },
