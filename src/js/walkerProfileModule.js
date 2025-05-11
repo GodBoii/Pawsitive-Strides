@@ -1,13 +1,22 @@
 // js/walkerProfileModule.js
 
 (function(App) {
-    'useASTRICT';
+    'use strict'; // Corrected from 'useASTRICT'
 
     let _supabase;
     let _currentUser;
     let _userProfileData;
     let _domElements = {}; // { walkerContentElement, walkerDetailsForm, walkerAgeInput, ..., walkerMessageElement, availabilityContainer, walkerRecurringAvailCheckbox }
     const DAYS_OF_WEEK = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
+
+    // Ensure pawsitiveCommon and its utilities are loaded
+    if (!window.pawsitiveCommon || !window.pawsitiveCommon.createSafeElement || !window.pawsitiveCommon.sanitizeHTML) {
+        console.error("[WalkerProfileModule] pawsitiveCommon or its utilities not found. Module cannot function correctly.");
+        App.WalkerProfile = { init: () => { console.error("WalkerProfileModule not fully initialized due to missing common utilities.");} };
+        return;
+    }
+    const { createSafeElement, sanitizeHTML } = window.pawsitiveCommon;
+
 
     function populateWalkerDetailsForm() {
         if (!_userProfileData || !_domElements.walkerDetailsForm) return;
@@ -33,14 +42,13 @@
         if (!_domElements.walkerDetailsForm || !_domElements.walkerMessageElement) return;
 
         _domElements.walkerMessageElement.textContent = 'Updating details...';
-        _domElements.walkerMessageElement.style.color = 'inherit';
+        _domElements.walkerMessageElement.className = 'walker-message ml-4 text-sm text-stone-600'; // Themed message
 
         const formData = new FormData(_domElements.walkerDetailsForm);
         const availabilitySchedule = collectAvailabilityData();
 
         const updates = {
             // Age is usually set at signup and not editable, or handled separately
-            // age: formData.get('age') ? parseInt(formData.get('age'), 10) : null,
             about_me: formData.get('about_me')?.trim() || null,
             experience_years: formData.get('experience_years') ? parseInt(formData.get('experience_years'), 10) : null,
             experience_summary: formData.get('experience_summary')?.trim() || null,
@@ -61,14 +69,14 @@
             if (error) throw error;
 
             _domElements.walkerMessageElement.textContent = 'Walker details updated successfully!';
-            _domElements.walkerMessageElement.style.color = 'green';
+            _domElements.walkerMessageElement.className = 'walker-message ml-4 text-sm text-emerald-700'; // Themed success
             _userProfileData = { ..._userProfileData, ...updatedProfile }; // Update local cache
             console.log("[WalkerProfileModule] Walker details updated locally:", _userProfileData);
 
         } catch (error) {
             console.error("[WalkerProfileModule] Error updating walker details:", error);
             _domElements.walkerMessageElement.textContent = `Error: ${error.message}`;
-            _domElements.walkerMessageElement.style.color = 'red';
+            _domElements.walkerMessageElement.className = 'walker-message ml-4 text-sm text-red-700'; // Themed error
         }
     }
 
@@ -78,36 +86,41 @@
         _domElements.availabilityContainer.innerHTML = ''; // Clear previous content
 
         DAYS_OF_WEEK.forEach(day => {
-            const dayRow = window.pawsitiveCommon.createSafeElement('div', { className: 'day-row mb-3', 'data-day': day });
+            const dayRow = createSafeElement('div', { className: 'day-row mb-4 p-3 border border-stone-200 rounded-lg bg-white shadow-sm', 'data-day': day });
             
-            const headerDiv = window.pawsitiveCommon.createSafeElement('div', { className: 'flex items-center mb-1' });
-            const checkbox = window.pawsitiveCommon.createSafeElement('input', { type: 'checkbox', id: `avail-${day.toLowerCase()}`, className: 'day-checkbox mr-2 h-4 w-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500' });
-            const label = window.pawsitiveCommon.createSafeElement('label', { htmlFor: `avail-${day.toLowerCase()}`, className: 'text-sm font-medium text-gray-700' }, day);
+            const headerDiv = createSafeElement('div', { className: 'flex items-center mb-2' });
+            const checkbox = createSafeElement('input', { 
+                type: 'checkbox', 
+                id: `avail-${day.toLowerCase()}`, 
+                // THEMED: Updated checkbox classes
+                className: 'day-checkbox mr-2 h-4 w-4 text-emerald-600 border-stone-300 rounded focus:ring-emerald-500 focus:ring-offset-0' 
+            });
+            const label = createSafeElement('label', { htmlFor: `avail-${day.toLowerCase()}`, className: 'text-sm font-medium text-stone-700 select-none' }, day);
             headerDiv.append(checkbox, label);
             dayRow.appendChild(headerDiv);
 
-            const timeSlotsContainer = window.pawsitiveCommon.createSafeElement('div', { className: 'time-slots pl-6 space-y-2 hidden' }); // Initially hidden
+            const timeSlotsContainer = createSafeElement('div', { className: 'time-slots pl-6 space-y-2 hidden' }); // Initially hidden
             dayRow.appendChild(timeSlotsContainer);
             addTimeSlotElement(timeSlotsContainer); // Add one empty slot by default
 
             checkbox.addEventListener('change', function() {
                 timeSlotsContainer.classList.toggle('hidden', !this.checked);
-                if (!this.checked) { // If unchecking, clear slots for that day
+                if (!this.checked) { 
                     timeSlotsContainer.innerHTML = '';
-                    addTimeSlotElement(timeSlotsContainer); // Add back one empty slot
+                    addTimeSlotElement(timeSlotsContainer); 
                 }
             });
 
             _domElements.availabilityContainer.appendChild(dayRow);
         });
-        // Add recurring checkbox if it's part of the DOM structure passed
+        
         if (_domElements.walkerRecurringAvailCheckbox) {
-             // Ensure it's visible and correctly labeled.
-             // You might need to append it after the DAYS_OF_WEEK loop if it's not already in HTML.
+            // Ensure the recurring checkbox also has themed styles if not already applied in HTML
+            // Example: _domElements.walkerRecurringAvailCheckbox.className = 'h-4 w-4 text-emerald-600 border-stone-300 rounded focus:ring-emerald-500 mr-2';
         }
     }
     
-    function formatTimeDisplay(time24h) { // e.g., "09:30"
+    function formatTimeDisplay(time24h) { 
         if (!time24h || typeof time24h !== 'string' || !time24h.includes(':')) return 'Invalid Time';
         const [hourStr, minuteStr] = time24h.split(':');
         const hour = parseInt(hourStr, 10);
@@ -115,12 +128,12 @@
         if (isNaN(hour) || isNaN(minute)) return 'Invalid Time';
 
         const ampm = hour >= 12 ? 'PM' : 'AM';
-        const h12 = hour % 12 || 12; // Convert 0 and 12 to 12
+        const h12 = hour % 12 || 12; 
         return `${h12.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')} ${ampm}`;
     }
 
     function createTimeOption(timeValue, displayValue, selectedValue) {
-        const option = window.pawsitiveCommon.createSafeElement('option', { value: timeValue }, displayValue);
+        const option = createSafeElement('option', { value: timeValue }, displayValue);
         if (timeValue === selectedValue) {
             option.selected = true;
         }
@@ -128,9 +141,9 @@
     }
 
     function populateTimeSelect(selectElement, selectedValue = '') {
-        selectElement.innerHTML = ''; // Clear existing options
-        selectElement.appendChild(window.pawsitiveCommon.createSafeElement('option', { value: '' }, selectElement.classList.contains('time-from') ? 'From' : 'To'));
-        for (let h = 0; h < 24; h++) {
+        selectElement.innerHTML = ''; 
+        selectElement.appendChild(createSafeElement('option', { value: '' }, selectElement.classList.contains('time-from') ? 'From' : 'To'));
+        for (let h = 6; h < 23; h++) { // Common walking hours e.g., 6 AM to 10:30 PM
             for (let m = 0; m < 60; m += 30) {
                 const timeVal = `${h.toString().padStart(2, '0')}:${m.toString().padStart(2, '0')}`;
                 selectElement.appendChild(createTimeOption(timeVal, formatTimeDisplay(timeVal), selectedValue));
@@ -139,27 +152,44 @@
     }
 
     function addTimeSlotElement(container, fromValue = '', toValue = '') {
-        const slotDiv = window.pawsitiveCommon.createSafeElement('div', { className: 'flex items-center space-x-2 mb-1' });
-        const fromSelect = window.pawsitiveCommon.createSafeElement('select', { className: 'time-from input-field focus:ring-purple-500 text-sm py-1 px-2 w-1/3' });
-        const toSpan = window.pawsitiveCommon.createSafeElement('span', { className: 'text-sm'}, 'to');
-        const toSelect = window.pawsitiveCommon.createSafeElement('select', { className: 'time-to input-field focus:ring-purple-500 text-sm py-1 px-2 w-1/3' });
+        const slotDiv = createSafeElement('div', { className: 'flex items-center space-x-2 mb-1' });
+        // THEMED: Updated select classes to match .input-field style from dashboard's inline CSS or direct Tailwind
+        const fromSelect = createSafeElement('select', { 
+            className: 'time-from input-field text-sm py-1.5 px-2 w-1/3 rounded-md border-stone-300 focus:ring-emerald-500 focus:border-emerald-500' 
+        });
+        const toSpan = createSafeElement('span', { className: 'text-sm text-stone-600'}, 'to');
+        const toSelect = createSafeElement('select', { 
+            className: 'time-to input-field text-sm py-1.5 px-2 w-1/3 rounded-md border-stone-300 focus:ring-emerald-500 focus:border-emerald-500' 
+        });
         
         populateTimeSelect(fromSelect, fromValue);
         populateTimeSelect(toSelect, toValue);
 
-        const addButton = window.pawsitiveCommon.createSafeElement('button', { type: 'button', className: 'add-time-slot-btn text-sm text-purple-600 hover:text-purple-800 focus:outline-none' }, '+');
+        // THEMED: Updated button classes
+        const addButton = createSafeElement('button', { 
+            type: 'button', 
+            className: 'add-time-slot-btn text-sm text-emerald-600 hover:text-emerald-700 focus:outline-none p-1 rounded-full hover:bg-emerald-100 transition-colors',
+            title: 'Add another time slot for this day'
+        }, 
+        '<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4" /></svg>');
+        addButton.innerHTML = addButton.textContent; // To render SVG
         addButton.addEventListener('click', () => addTimeSlotElement(container));
         
         slotDiv.append(fromSelect, toSpan, toSelect, addButton);
 
-        // Add remove button only if it's not the very first slot or if it has values (meaning it's not a fresh template slot)
         if (container.children.length > 0 || fromValue || toValue) {
-            const removeButton = window.pawsitiveCommon.createSafeElement('button', { type: 'button', className: 'remove-time-slot-btn text-sm text-red-600 hover:text-red-800 ml-1 focus:outline-none' }, '×');
+            // THEMED: Updated remove button classes
+            const removeButton = createSafeElement('button', { 
+                type: 'button', 
+                className: 'remove-time-slot-btn text-sm text-red-500 hover:text-red-700 ml-1 focus:outline-none p-1 rounded-full hover:bg-red-100 transition-colors',
+                title: 'Remove this time slot'
+            }, 
+            '<svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>');
+            removeButton.innerHTML = removeButton.textContent; // To render SVG
             removeButton.addEventListener('click', () => {
-                // Ensure at least one slot remains for adding new times if all are removed
                 if (container.children.length > 1) {
                     slotDiv.remove();
-                } else { // If it's the last one, just clear its values
+                } else { 
                     populateTimeSelect(fromSelect, '');
                     populateTimeSelect(toSelect, '');
                 }
@@ -169,7 +199,7 @@
         container.appendChild(slotDiv);
     }
     
-    function loadAvailabilitySchedule(scheduleData) { // scheduleData is JS object
+    function loadAvailabilitySchedule(scheduleData) { 
         if (!_domElements.availabilityContainer || !scheduleData) return;
         console.log("[WalkerProfileModule] Loading availability schedule:", scheduleData);
 
@@ -184,7 +214,7 @@
             const checkbox = dayRow.querySelector('.day-checkbox');
             const timeSlotsContainer = dayRow.querySelector('.time-slots');
             
-            timeSlotsContainer.innerHTML = ''; // Clear default/previous slots
+            timeSlotsContainer.innerHTML = ''; 
 
             if (scheduleData[day] && scheduleData[day].length > 0) {
                 if(checkbox) checkbox.checked = true;
@@ -196,7 +226,7 @@
             } else {
                 if(checkbox) checkbox.checked = false;
                 timeSlotsContainer.classList.add('hidden');
-                addTimeSlotElement(timeSlotsContainer); // Add one empty slot if day is not active
+                addTimeSlotElement(timeSlotsContainer); 
             }
         });
     }
@@ -206,7 +236,7 @@
         if (_domElements.walkerRecurringAvailCheckbox) {
             schedule.recurring = _domElements.walkerRecurringAvailCheckbox.checked;
         } else {
-            schedule.recurring = false; // Default if checkbox not present
+            schedule.recurring = false; 
         }
 
         if (!_domElements.availabilityContainer) return schedule;
@@ -220,7 +250,13 @@
                     const from = slotDiv.querySelector('.time-from').value;
                     const to = slotDiv.querySelector('.time-to').value;
                     if (from && to) {
-                        slots.push(`${from}-${to}`);
+                        // Basic validation: "to" time must be after "from" time
+                        if (to > from) {
+                            slots.push(`${from}-${to}`);
+                        } else {
+                            console.warn(`[WalkerProfileModule] Invalid time slot for ${day}: ${from} - ${to}. 'To' time must be after 'From' time. Slot skipped.`);
+                            // Optionally provide UI feedback here
+                        }
                     }
                 });
                 if (slots.length > 0) {
@@ -250,7 +286,7 @@
             }
 
             if (_domElements.walkerDetailsForm) {
-                populateWalkerDetailsForm(); // This will also call initializeAvailabilityUI and loadAvailabilitySchedule
+                populateWalkerDetailsForm(); 
                 _domElements.walkerDetailsForm.addEventListener('submit', handleWalkerDetailsUpdate);
             }
         }

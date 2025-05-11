@@ -18,7 +18,6 @@
     // Ensure pawsitiveCommon and its utilities are loaded
     if (!window.pawsitiveCommon || !window.pawsitiveCommon.createSafeElement || !window.pawsitiveCommon.sanitizeHTML) {
         console.error("[QuickRideWalkerModule] pawsitiveCommon or its utilities not found.");
-        // Optionally, prevent further execution or set a flag
         App.QuickRideWalker = { init: () => {}, onViewActivated: () => {}, onViewDeactivated: () => {} };
         return;
     }
@@ -62,25 +61,26 @@
         _domElements.noAcceptedRidesMessage.classList.add('hidden');
 
         rides.forEach(ride => {
-            const card = createSafeElement('div', { className: 'quickride-walker-card p-4 border-l-4 border-green-600 bg-green-50 rounded-md' });
+            // UPDATED: Themed card styles
+            const card = createSafeElement('div', { className: 'quickride-walker-card p-4 border-l-4 border-emerald-600 bg-emerald-50 rounded-lg shadow-md mb-3' });
             
             const dogName = ride.dogs && ride.dogs.name ? sanitizeHTML(ride.dogs.name) : 'Dog (Name N/A)';
             const ownerName = ride.owner && ride.owner.full_name ? sanitizeHTML(ride.owner.full_name) : 'Owner (Name N/A)';
             
-            card.appendChild(createSafeElement('h4', { className: 'font-semibold text-md text-green-800 mb-1' }, `${dogName}'s Walk with ${ownerName}`));
+            // UPDATED: Themed heading
+            card.appendChild(createSafeElement('h4', { className: 'font-serif text-lg font-semibold text-emerald-800 mb-2' }, `${dogName}'s Walk with ${ownerName}`));
             
-            const detailsContainer = createSafeElement('div', {className: 'space-y-1 text-xs text-gray-700'});
+            const detailsContainer = createSafeElement('div', {className: 'space-y-1 text-xs text-stone-700'});
 
-            // MODIFIED: Use array of nodes for content with <strong>
             detailsContainer.appendChild(
                 createSafeElement('p', {}, [
-                    createSafeElement('strong', {}, 'Scheduled for:'),
+                    createSafeElement('strong', { className: 'text-stone-800' }, 'Scheduled for:'),
                     document.createTextNode(` ${formatRideDateTime(ride.walk_datetime)}`)
                 ])
             );
             detailsContainer.appendChild(
                 createSafeElement('p', {}, [
-                    createSafeElement('strong', {}, 'Your Payout:'),
+                    createSafeElement('strong', { className: 'text-stone-800' }, 'Your Payout:'),
                     document.createTextNode(` ₹${sanitizeHTML(String(ride.pay_amount))}`)
                 ])
             );
@@ -88,7 +88,7 @@
             if (ride.owner && ride.owner.mobile) {
                  detailsContainer.appendChild(
                     createSafeElement('p', {}, [
-                        createSafeElement('strong', {}, 'Owner Contact:'),
+                        createSafeElement('strong', { className: 'text-stone-800' }, 'Owner Contact:'),
                         document.createTextNode(` ${sanitizeHTML(ride.owner.mobile)}`)
                     ])
                  );
@@ -96,15 +96,15 @@
             if (ride.owner && ride.owner.address) {
                  detailsContainer.appendChild(
                     createSafeElement('p', {}, [
-                        createSafeElement('strong', {}, 'Location:'),
+                        createSafeElement('strong', { className: 'text-stone-800' }, 'Location:'),
                         document.createTextNode(` ${sanitizeHTML(ride.owner.address)}`)
                     ])
                  );
             }
              if (ride.instructions) {
                 detailsContainer.appendChild(
-                    createSafeElement('p', {className: 'mt-1 pt-1 border-t border-green-200'}, [
-                        createSafeElement('strong', {}, 'Instructions:'),
+                    createSafeElement('p', {className: 'mt-1 pt-1 border-t border-emerald-200'}, [
+                        createSafeElement('strong', { className: 'text-stone-800' }, 'Instructions:'),
                         document.createTextNode(` ${sanitizeHTML(ride.instructions)}`)
                     ])
                 );
@@ -112,11 +112,12 @@
 
             card.appendChild(detailsContainer);
             
-            const actionsDiv = createSafeElement('div', { className: 'mt-3 pt-2 border-t border-green-200 flex justify-end space-x-2' });
+            const actionsDiv = createSafeElement('div', { className: 'mt-3 pt-2 border-t border-emerald-200 flex justify-end space-x-2' });
+            // UPDATED: Themed button
             const viewOwnerBtn = createSafeElement('button', {
-                className: 'view-owner-profile-btn-accepted text-xs bg-green-100 text-green-700 hover:bg-green-200 px-2.5 py-1 rounded-md',
+                className: 'view-owner-profile-btn-accepted text-xs bg-emerald-100 text-emerald-700 hover:bg-emerald-200 px-2.5 py-1 rounded-md transition-colors duration-150',
                 'data-owner-id': ride.owner_id, 
-                'data-owner-name': ownerName // Use the already sanitized ownerName
+                'data-owner-name': ownerName
             }, 'View Owner');
             actionsDiv.appendChild(viewOwnerBtn);
             card.appendChild(actionsDiv);
@@ -137,26 +138,27 @@
         _domElements.availableRidesMessage.classList.add('hidden');
 
         rides.forEach(ride => {
-            const card = createSafeElement('div', { className: 'quickride-walker-card p-4 bg-white shadow-sm hover:shadow-md transition-shadow' });
+            // UPDATED: Themed card (using .quickride-walker-card definition from inline style)
+            const card = createSafeElement('div', { className: 'quickride-walker-card p-4 bg-white shadow-md hover:shadow-lg transition-shadow duration-150 rounded-lg border border-amber-200' });
             
             const header = createSafeElement('div', { className: 'flex justify-between items-start mb-2' });
-            header.appendChild(createSafeElement('h4', { className: 'font-semibold text-lg text-purple-700' }, `Walk for ${sanitizeHTML(ride.dog_name)}`));
-            header.appendChild(createSafeElement('span', {className: 'text-lg font-bold text-green-600'}, `₹${sanitizeHTML(String(ride.pay_amount))}`));
+            // UPDATED: Themed heading and pay amount
+            header.appendChild(createSafeElement('h4', { className: 'font-serif text-xl font-semibold text-emerald-700' }, `Walk for ${sanitizeHTML(ride.dog_name)}`));
+            header.appendChild(createSafeElement('span', {className: 'text-xl font-bold text-amber-600'}, `₹${sanitizeHTML(String(ride.pay_amount))}`));
             card.appendChild(header);
 
-            const detailsGrid = createSafeElement('div', { className: 'grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-gray-700 mb-3' });
+            const detailsGrid = createSafeElement('div', { className: 'grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-stone-600 mb-3' });
             
-            // MODIFIED: Use array of nodes for content with <strong>
             detailsGrid.appendChild(
                 createSafeElement('p', {}, [
-                    createSafeElement('strong', {}, 'Owner:'),
+                    createSafeElement('strong', { className: 'text-stone-700' }, 'Owner:'),
                     document.createTextNode(` ${sanitizeHTML(ride.owner_full_name)}`)
                 ])
             );
-            detailsGrid.appendChild(createSafeElement('p', {className: 'text-right'}, `~ ${parseFloat(ride.distance_km).toFixed(1)} km away`));
+            detailsGrid.appendChild(createSafeElement('p', {className: 'text-right text-stone-500'}, `~ ${parseFloat(ride.distance_km).toFixed(1)} km away`));
             detailsGrid.appendChild(
                 createSafeElement('p', { className: 'col-span-2' }, [
-                    createSafeElement('strong', {}, 'Time:'),
+                    createSafeElement('strong', { className: 'text-stone-700' }, 'Time:'),
                     document.createTextNode(` ${formatRideDateTime(ride.walk_datetime)}`)
                 ])
             );
@@ -164,20 +166,21 @@
             
             if (ride.instructions) {
                  card.appendChild(
-                    createSafeElement('div', {className: 'text-xs text-gray-600 italic mb-3 p-2 bg-gray-50 rounded-md border border-gray-200'}, [
-                        createSafeElement('strong', {}, 'Instructions:'), // MODIFIED
+                    createSafeElement('div', {className: 'text-xs text-stone-600 italic mb-3 p-2 bg-amber-50 rounded-md border border-amber-100'}, [
+                        createSafeElement('strong', { className: 'text-stone-700'}, 'Instructions:'),
                         document.createTextNode(` ${sanitizeHTML(ride.instructions.substring(0,120))}${ride.instructions.length > 120 ? '...' : '' }`)
                     ])
                 );
             }
 
-            const actionsDiv = createSafeElement('div', { className: 'flex flex-col sm:flex-row items-center sm:space-x-2 space-y-2 sm:space-y-0 mt-3 pt-3 border-t border-gray-200' });
+            const actionsDiv = createSafeElement('div', { className: 'flex flex-col sm:flex-row items-center sm:space-x-2 space-y-2 sm:space-y-0 mt-3 pt-3 border-t border-stone-200' });
+            // UPDATED: Themed buttons
             const acceptButton = createSafeElement('button', {
-                className: 'accept-ride-btn bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-md transition w-full sm:w-auto focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2',
+                className: 'accept-ride-btn bg-emerald-600 hover:bg-emerald-700 text-white font-medium py-2 px-4 rounded-lg transition w-full sm:w-auto focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transform hover:-translate-y-0.5 hover:shadow-md',
                 'data-ride-id': ride.ride_id
             }, 'Accept Ride');
             const viewProfileButton = createSafeElement('button', {
-                className: 'view-owner-profile-btn bg-purple-100 hover:bg-purple-200 text-purple-700 font-medium py-2 px-4 rounded-md transition w-full sm:w-auto focus:outline-none focus:ring-2 focus:ring-purple-200',
+                className: 'view-owner-profile-btn bg-amber-100 hover:bg-amber-200 text-amber-700 font-medium py-2 px-4 rounded-lg transition w-full sm:w-auto focus:outline-none focus:ring-2 focus:ring-amber-300 focus:ring-offset-1 transform hover:-translate-y-0.5 hover:shadow-sm',
                 'data-owner-id': ride.owner_id, 
                 'data-owner-name': ride.owner_full_name,
                 'data-distance': parseFloat(ride.distance_km).toFixed(1)
@@ -195,7 +198,9 @@
         if (!_supabase || !_currentUser || !_domElements.noAcceptedRidesMessage) return;
         _domElements.noAcceptedRidesMessage.textContent = 'Loading your accepted rides...';
         _domElements.noAcceptedRidesMessage.classList.remove('hidden');
-        _domElements.noAcceptedRidesMessage.style.color = 'inherit';
+        _domElements.noAcceptedRidesMessage.style.color = ''; // Reset color, use Tailwind class below
+        _domElements.noAcceptedRidesMessage.className = 'text-stone-500 italic text-lg';
+
 
         try {
             const { data, error } = await _supabase
@@ -214,7 +219,7 @@
         } catch (error) {
             console.error('[QuickRideWalkerModule] Error fetching accepted rides:', error);
             _domElements.noAcceptedRidesMessage.textContent = `Error loading accepted rides: ${error.message}`;
-            _domElements.noAcceptedRidesMessage.style.color = 'red';
+            _domElements.noAcceptedRidesMessage.className = 'text-red-600 italic text-lg'; // Use themed error color
         }
     }
 
@@ -224,7 +229,8 @@
         if (showLoading) {
             _domElements.availableRidesMessage.textContent = 'Searching for nearby rides...';
             _domElements.availableRidesMessage.classList.remove('hidden');
-            _domElements.availableRidesMessage.style.color = 'inherit';
+            _domElements.availableRidesMessage.style.color = ''; // Reset color, use Tailwind class below
+            _domElements.availableRidesMessage.className = 'text-stone-500 italic text-lg mb-4';
             toggleSpinner(true);
         }
 
@@ -237,7 +243,7 @@
         } catch (error) {
             console.error('[QuickRideWalkerModule] Error fetching available rides:', error);
             _domElements.availableRidesMessage.textContent = `Error fetching available rides: ${error.message}`;
-            _domElements.availableRidesMessage.style.color = 'red';
+            _domElements.availableRidesMessage.className = 'text-red-600 italic text-lg mb-4'; // Use themed error color
             _domElements.availableRidesMessage.classList.remove('hidden');
         } finally {
             if (showLoading) {
@@ -263,7 +269,7 @@
         if (_domElements.availableRidesMessage) {
             _domElements.availableRidesMessage.textContent = 'Attempting to accept ride...';
             _domElements.availableRidesMessage.classList.remove('hidden');
-            _domElements.availableRidesMessage.style.color = 'inherit';
+            _domElements.availableRidesMessage.className = 'text-stone-600 italic text-lg mb-4'; // Themed processing color
         }
 
         try {
@@ -272,7 +278,7 @@
 
             if (_domElements.availableRidesMessage) {
                 _domElements.availableRidesMessage.textContent = 'Ride accepted successfully!';
-                _domElements.availableRidesMessage.style.color = 'green';
+                _domElements.availableRidesMessage.className = 'text-emerald-600 italic text-lg mb-4'; // Themed success color
                  setTimeout(() => {
                     if(_domElements.availableRidesMessage && _domElements.availableRidesMessage.textContent === 'Ride accepted successfully!') { 
                         _domElements.availableRidesMessage.classList.add('hidden');
@@ -286,7 +292,7 @@
             console.error('[QuickRideWalkerModule] Error accepting ride:', error);
             if (_domElements.availableRidesMessage) {
                 _domElements.availableRidesMessage.textContent = `Error: ${error.message || 'Could not accept ride. It might have been taken.'}`;
-                _domElements.availableRidesMessage.style.color = 'red';
+                _domElements.availableRidesMessage.className = 'text-red-600 italic text-lg mb-4'; // Themed error color
             }
             button.disabled = false; 
             button.textContent = 'Accept Ride';
@@ -334,6 +340,11 @@
                         console.log('[QuickRideWalkerModule] Relevant change detected, refreshing available rides.');
                         fetchAvailableQuickRides(false); 
                     }
+                     // Also refresh accepted rides if a ride current user accepted is updated (e.g. cancelled by owner)
+                    if (payload.eventType === 'UPDATE' && payload.new && payload.new.accepted_walker_id === _currentUser.id) {
+                        console.log('[QuickRideWalkerModule] Change detected for one of my accepted rides, refreshing list.');
+                        fetchMyAcceptedQuickRides();
+                    }
                 }
             )
             .subscribe((status, err) => {
@@ -375,8 +386,8 @@
             
             const eventHandler = (e) => {
                 const acceptBtn = e.target.closest('.accept-ride-btn');
-                const profileBtn = e.target.closest('.view-owner-profile-btn'); // For available rides list
-                const acceptedProfileBtn = e.target.closest('.view-owner-profile-btn-accepted'); // For accepted rides list
+                const profileBtn = e.target.closest('.view-owner-profile-btn');
+                const acceptedProfileBtn = e.target.closest('.view-owner-profile-btn-accepted');
 
                 if (acceptBtn) {
                     handleAcceptRideClick(e);
@@ -401,7 +412,7 @@
                 if(_domElements.availableRidesMessage) {
                     _domElements.availableRidesMessage.textContent = 'Your location is not set in your profile. Please update your address to see nearby rides.';
                     _domElements.availableRidesMessage.classList.remove('hidden');
-                    _domElements.availableRidesMessage.style.color = 'red';
+                    _domElements.availableRidesMessage.className = 'text-red-600 italic text-lg mb-4'; // Themed error
                 }
             }
             fetchMyAcceptedQuickRides();

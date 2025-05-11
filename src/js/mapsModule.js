@@ -30,7 +30,14 @@
     const DETAIL_ZOOM = 15;
     const SEARCH_RADIUS_KM = 50.0;
 
-    // Helper for modal, can be moved to pawsitiveCommon if used elsewhere
+    // Ensure pawsitiveCommon and its utilities are loaded
+    if (!window.pawsitiveCommon || !window.pawsitiveCommon.createSafeElement || !window.pawsitiveCommon.sanitizeHTML) {
+        console.error("[mapsModule.js] pawsitiveCommon or its utilities not found. Module cannot function correctly.");
+        App.Maps = { init: () => {}, onMapViewActivated: () => {} }; // Provide dummy functions
+        return;
+    }
+    const { createSafeElement, sanitizeHTML } = window.pawsitiveCommon;
+
     const DAYS_OF_WEEK = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
     function formatTimeDisplay(time24h) {
         if (!time24h || typeof time24h !== 'string' || !time24h.includes(':')) return 'Invalid Time';
@@ -59,7 +66,6 @@
         }
     }
 
-    // This function is called by the global initMap in profile.html
     function _handleGoogleMapsApiLoadedAndTriggered() {
         console.log("[MapsModule] _handleGoogleMapsApiLoadedAndTriggered called (via global initMap).");
         if (mapsApiReady) {
@@ -69,7 +75,6 @@
 
         if (typeof google === 'undefined' || !google.maps || !google.maps.Geocoder || !google.maps.places) {
             console.error("[MapsModule] Google Maps objects not available even after global initMap! This is unexpected.");
-            // Display error on page if possible
             if (_domElements.mapContainer) {
                 _domElements.mapContainer.innerHTML = `<p class="map-loading-message text-red-600 p-4">Critical Error: Google Maps components failed to load. Try refreshing.</p>`;
             }
@@ -89,7 +94,6 @@
             }
         }
         
-        // Execute any queued callbacks
         let callbackCount = apiReadyCallbacks.length;
         while (apiReadyCallbacks.length > 0) {
             const cb = apiReadyCallbacks.shift();
@@ -102,9 +106,6 @@
         }
         if (callbackCount > 0) console.log(`[MapsModule] Processed ${callbackCount} queued callbacks.`);
 
-
-        // If main map view is active AND its map instance not created, initialize it now.
-        // This ensures that if the map tab was clicked before the API was fully ready, it gets initialized.
         if (_domElements.mapContainer && _domElements.mapContainer.closest('.content-section.active') && !mainMapInstance) {
             console.log("[MapsModule] Main map view is active post-API ready, ensuring map initializes.");
             _initMainMapViewMap();
@@ -125,8 +126,8 @@
         if (!mainMapInstance) {
             console.warn("[MapsModule] Main map instance not ready for loading data. Attempting to initialize map first.");
             if (_domElements.mapContainer) _domElements.mapContainer.innerHTML = '<p class="map-loading-message">Map initializing, please wait...</p>';
-            _initMainMapViewMap(); // Try to init if not already
-            if (!mainMapInstance) { // If still not initialized, bail
+            _initMainMapViewMap(); 
+            if (!mainMapInstance) { 
                 console.error("[MapsModule] Failed to initialize main map instance for data loading.");
                 if (_domElements.mapContainer) _domElements.mapContainer.innerHTML = '<p class="map-loading-message text-red-500">Error: Map could not be initialized for data.</p>';
                 return;
@@ -138,30 +139,28 @@
             return;
         }
 
-        mainMapDataLoaded = false; // Reset flag before loading
+        mainMapDataLoaded = false; 
         _clearMainMapMarkers();
         console.log("[MapsModule] Loading data for main map view. User:", _userProfileData.full_name);
 
-        // --- Corrected Loading Message Handling ---
         let mapLoadingMessage = _domElements.mapContainer.querySelector('.map-loading-message.map-overlay-message');
         if (!mapLoadingMessage) {
-            mapLoadingMessage = window.pawsitiveCommon.createSafeElement('p', {
-                className: 'map-loading-message map-overlay-message text-gray-600 p-4'
+            mapLoadingMessage = createSafeElement('p', {
+                className: 'map-loading-message map-overlay-message text-stone-600 p-4' // Themed text
             });
             mapLoadingMessage.style.position = 'absolute';
             mapLoadingMessage.style.top = '50%';
             mapLoadingMessage.style.left = '50%';
             mapLoadingMessage.style.transform = 'translate(-50%, -50%)';
-            mapLoadingMessage.style.backgroundColor = 'rgba(249, 250, 251, 0.9)';
+            mapLoadingMessage.style.backgroundColor = 'rgba(236, 253, 245, 0.9)'; // emerald-50 with opacity
             mapLoadingMessage.style.padding = '1em';
-            mapLoadingMessage.style.borderRadius = '8px';
+            mapLoadingMessage.style.borderRadius = '0.75rem'; // rounded-xl
             mapLoadingMessage.style.zIndex = '10';
             mapLoadingMessage.style.textAlign = 'center';
             _domElements.mapContainer.appendChild(mapLoadingMessage);
         }
         mapLoadingMessage.textContent = 'Loading your location...';
         mapLoadingMessage.style.display = 'block';
-        // --- End Corrected Loading Message Handling ---
 
         let userCoords = null;
         const bounds = new google.maps.LatLngBounds();
@@ -170,18 +169,17 @@
             userCoords = { lat: _userProfileData.latitude, lng: _userProfileData.longitude };
             mainMapUserMarker = new google.maps.Marker({
                 position: userCoords, map: mainMapInstance, title: 'Your Location',
-                icon: { path: google.maps.SymbolPath.CIRCLE, scale: 10, fillColor: '#8B5CF6', fillOpacity: 1, strokeColor: '#ffffff', strokeWeight: 2 },
+                icon: { path: google.maps.SymbolPath.CIRCLE, scale: 10, fillColor: '#059669', fillOpacity: 1, strokeColor: '#ffffff', strokeWeight: 2 }, // emerald-600
                 zIndex: 100
             });
             bounds.extend(userCoords);
-            // Update message after plotting user
             mapLoadingMessage.textContent = `Finding nearby ${_userProfileData.role === 'owner' ? 'walkers' : 'owners'}...`;
         } else {
             mapLoadingMessage.textContent = 'Your location is not set. Please update your profile address to see nearby users.';
             mainMapInstance.setCenter(INDIA_CENTER);
             mainMapInstance.setZoom(DEFAULT_ZOOM);
-            mainMapDataLoaded = true; // Mark as loaded even if no data due to user location missing
-            return; // Stop further processing
+            mainMapDataLoaded = true; 
+            return; 
         }
 
         const targetRole = _userProfileData.role === 'owner' ? 'walker' : 'owner';
@@ -209,8 +207,8 @@
                         const otherCoords = { lat: otherUser.latitude, lng: otherUser.longitude };
                         const marker = new google.maps.Marker({
                             position: otherCoords, map: mainMapInstance,
-                            title: window.pawsitiveCommon.sanitizeHTML(otherUser.full_name || 'User'),
-                            icon: { path: google.maps.SymbolPath.CIRCLE, scale: 8, fillColor: targetRole === 'walker' ? '#10B981' : '#F59E0B', fillOpacity: 1, strokeColor: '#ffffff', strokeWeight: 2 }
+                            title: sanitizeHTML(otherUser.full_name || 'User'),
+                            icon: { path: google.maps.SymbolPath.CIRCLE, scale: 8, fillColor: targetRole === 'walker' ? '#10b981' : '#f59e0b', fillOpacity: 1, strokeColor: '#ffffff', strokeWeight: 2 } // emerald-500 or amber-500
                         });
                         mainMapOtherUserMarkers.push(marker);
                         bounds.extend(otherCoords);
@@ -218,15 +216,15 @@
 
                         marker.addListener('click', () => {
                             const contentString = `
-                                <div class="p-2">
-                                    <strong>${window.pawsitiveCommon.sanitizeHTML(otherUser.full_name || 'N/A')}</strong><br>
-                                    ${window.pawsitiveCommon.sanitizeHTML(otherUser.role === 'owner' ? 'Pet Owner' : 'Dog Walker')}<br>
-                                    <small>Approx. ${otherUser.distance_km?.toFixed(1) ?? '?'} km away</small>
+                                <div class="p-2 font-sans">
+                                    <strong class="font-serif text-stone-800">${sanitizeHTML(otherUser.full_name || 'N/A')}</strong><br>
+                                    <span class="text-sm text-stone-600">${sanitizeHTML(otherUser.role === 'owner' ? 'Pet Owner' : 'Dog Walker')}</span><br>
+                                    <small class="text-xs text-stone-500">Approx. ${otherUser.distance_km?.toFixed(1) ?? '?'} km away</small>
                                     <div class="mt-2">
-                                        <button class="view-profile-btn-map bg-purple-600 text-white text-xs px-3 py-1 rounded hover:bg-purple-700"
+                                        <button class="view-profile-btn-map bg-emerald-600 text-white text-xs px-3 py-1.5 rounded-md hover:bg-emerald-700 transition-colors duration-150"
                                                 data-user-id="${otherUser.id}"
                                                 data-user-role="${otherUser.role}"
-                                                data-user-name="${window.pawsitiveCommon.sanitizeHTML(otherUser.full_name || 'User')}"
+                                                data-user-name="${sanitizeHTML(otherUser.full_name || 'User')}"
                                                 data-user-distance="${otherUser.distance_km?.toFixed(1) || '?'}">
                                             View Profile
                                         </button>
@@ -239,44 +237,38 @@
                 });
             }
             
-            // Add event listener for dynamically created buttons in infowindow
-            // This should be robust enough to handle multiple infowindows if they stay open.
-            // However, typically only one InfoWindow is shown at a time by Google Maps API.
              google.maps.event.addListener(infowindow, 'domready', () => {
-                const viewProfileBtn = document.querySelector('.view-profile-btn-map'); // Get the button from the current infowindow
-                if (viewProfileBtn && !viewProfileBtn.dataset.listenerAttachedMap) { // Check if listener already attached
+                const viewProfileBtn = document.querySelector('.view-profile-btn-map'); 
+                if (viewProfileBtn && !viewProfileBtn.dataset.listenerAttachedMap) { 
                     viewProfileBtn.addEventListener('click', (e) => {
-                        const btn = e.currentTarget; // Use currentTarget for safety
+                        const btn = e.currentTarget; 
                          _viewUserProfileInModal(btn.dataset.userId, btn.dataset.userRole, btn.dataset.userName, btn.dataset.userDistance);
                     });
-                    viewProfileBtn.dataset.listenerAttachedMap = 'true'; // Mark as attached
+                    viewProfileBtn.dataset.listenerAttachedMap = 'true'; 
                 }
             });
 
-
-            // Update map view and loading message based on results
-            if (plottedCount > 0 || mainMapUserMarker) { // If user marker OR other markers are plotted
+            if (plottedCount > 0 || mainMapUserMarker) { 
                 if (!bounds.isEmpty()) {
                     mainMapInstance.fitBounds(bounds);
-                    // Adjust zoom after fitBounds if it's too high
                     google.maps.event.addListenerOnce(mainMapInstance, 'idle', function() {
-                        if (this.getZoom() > DETAIL_ZOOM + 1) { // Allow slightly higher zoom than detail
+                        if (this.getZoom() > DETAIL_ZOOM + 1) { 
                             this.setZoom(DETAIL_ZOOM + 1);
                         }
                     });
-                } else if (userCoords) { // Only user marker was plotted
+                } else if (userCoords) { 
                     mainMapInstance.setCenter(userCoords);
                     mainMapInstance.setZoom(DETAIL_ZOOM);
                 }
-                mapLoadingMessage.style.display = 'none'; // Hide loading message if map has content
-            } else { // Should only happen if userCoords was missing initially, handled above.
+                mapLoadingMessage.style.display = 'none'; 
+            } else { 
                 mainMapInstance.setCenter(INDIA_CENTER);
                 mainMapInstance.setZoom(DEFAULT_ZOOM);
-                mapLoadingMessage.textContent = 'Could not display map content.'; // Fallback message
+                mapLoadingMessage.textContent = 'Could not display map content.'; 
                 mapLoadingMessage.style.display = 'block';
             }
 
-            if (plottedCount === 0 && mainMapUserMarker) { // Only user is plotted, no others found
+            if (plottedCount === 0 && mainMapUserMarker) { 
                 mapLoadingMessage.textContent = `No nearby ${targetRole}s found within ${SEARCH_RADIUS_KM}km.`;
                 mapLoadingMessage.style.display = 'block';
             }
@@ -284,7 +276,7 @@
         } catch (error) {
             console.error("[MapsModule] Error calling RPC or plotting nearby users:", error);
             mapLoadingMessage.textContent = `Error loading map data: ${error.message}`;
-            mapLoadingMessage.style.display = 'block'; // Keep message visible with error
+            mapLoadingMessage.style.display = 'block'; 
         } finally {
             mainMapDataLoaded = true;
             console.log("[MapsModule] Finished loading data for main map view.");
@@ -294,41 +286,33 @@
     function _initMainMapViewMap() {
         if (mainMapInstance) {
             console.log("[MapsModule] _initMainMapViewMap called, but instance already exists. Ensuring resize.");
-            // If instance exists, just ensure it's visible and trigger resize
-            if (google && _domElements.mapContainer.offsetHeight > 0) { // Check if container has height
+            if (google && _domElements.mapContainer.offsetHeight > 0) { 
                 google.maps.event.trigger(mainMapInstance, 'resize');
             }
-            return; // Don't re-create
+            return; 
         }
     
         if (!_domElements.mapContainer) {
             console.error("[MapsModule] Main map container element not found for _initMainMapViewMap.");
             return;
         }
-        _domElements.mapContainer.innerHTML = ''; // Clear any placeholders like "Map loading..."
+        _domElements.mapContainer.innerHTML = ''; 
         
         console.log("[MapsModule] Attempting to create main map view instance.");
         try {
             mainMapInstance = new google.maps.Map(_domElements.mapContainer, {
                 center: INDIA_CENTER,
                 zoom: DEFAULT_ZOOM,
-                mapId: '8a23b4bdd9ef4f8c', // Your Map ID
+                mapId: '8a23b4bdd9ef4f8c', 
                 mapTypeControl: false,
                 streetViewControl: false,
             });
             console.log("[MapsModule] Main map view instance CREATED.");
     
-            // Defer resize slightly to allow the DOM to fully update after section becomes active
-            requestAnimationFrame(() => { // Use requestAnimationFrame for better timing
+            requestAnimationFrame(() => { 
                 if (google && mainMapInstance && _domElements.mapContainer.offsetHeight > 0) {
                     google.maps.event.trigger(mainMapInstance, 'resize');
                     console.log("[MapsModule] Resize triggered shortly after mainMapInstance creation.");
-                    // If bounds need to be set immediately after creation, do it here *after* resize
-                    // e.g., if (_userProfileData && _userProfileData.latitude) {
-                    //    const userPos = { lat: _userProfileData.latitude, lng: _userProfileData.longitude };
-                    //    mainMapInstance.setCenter(userPos);
-                    //    mainMapInstance.setZoom(DETAIL_ZOOM); // Or fitBounds if you have multiple markers
-                    // }
                 } else if (google && mainMapInstance) {
                     console.warn("[MapsModule] Post-creation: mapContainer might not have dimensions yet. Resize might be ineffective now.");
                 }
@@ -342,66 +326,6 @@
         }
     }
     
-    App.Maps = {
-        // ... (init, loadGoogleMapsApiKeyAndScript, _triggerInternalApiReady, etc. remain the same) ...
-    
-        onMapViewActivated: function(updatedProfileData) {
-            console.log("[MapsModule] Map View Activated. Profile data passed:", !!updatedProfileData);
-            if(updatedProfileData) _userProfileData = updatedProfileData; // Update if fresh data is passed
-    
-            _whenGoogleMapsReady(() => { // Ensures google.maps objects are available
-                console.log("[MapsModule] Google API ready for Map View Activation.");
-    
-                if (!_domElements.mapContainer) {
-                    console.error("[MapsModule] mapContainer DOM element not found for onMapViewActivated.");
-                    return;
-                }
-    
-                // Ensure the map section (and thus mapContainer) is actually visible
-                // The 'active' class should be on mapContainer's parent section
-                const mapSectionElement = _domElements.mapContainer.closest('.content-section');
-                if (!mapSectionElement || !mapSectionElement.classList.contains('active')) {
-                    console.warn("[MapsModule] Map section is not active. Map rendering might be deferred or incorrect.");
-                    // Potentially wait or re-check, but dashboard-main should handle active class.
-                }
-    
-    
-                if (!mainMapInstance) {
-                    console.log("[MapsModule] Main map instance doesn't exist, calling _initMainMapViewMap.");
-                    _initMainMapViewMap(); // This will create the map and attempt an initial resize
-                } else {
-                    // Map instance exists. Container might have just become visible.
-                    // Trigger resize to ensure it picks up correct dimensions.
-                    console.log("[MapsModule] Main map instance exists. Ensuring resize.");
-                    requestAnimationFrame(() => { // Use rAF for better timing with DOM changes
-                        if (google && mainMapInstance && _domElements.mapContainer.offsetHeight > 0) {
-                            google.maps.event.trigger(mainMapInstance, 'resize');
-                            console.log("[MapsModule] Resize triggered on existing mainMapInstance (onMapViewActivated).");
-                            // If map was already centered/zoomed, re-apply if necessary, e.g.,
-                            // if (mainMapInstance.getCenter()) mainMapInstance.setCenter(mainMapInstance.getCenter());
-                            // if (mainMapInstance.getZoom()) mainMapInstance.setZoom(mainMapInstance.getZoom());
-                        } else if (google && mainMapInstance) {
-                             console.warn("[MapsModule] onMapViewActivated: mapContainer still might not have dimensions. Resize might be ineffective.");
-                        }
-                    });
-                }
-    
-                // Proceed to load data only if the map instance is now valid
-                // and data hasn't been loaded or needs refresh
-                if (mainMapInstance && (!mainMapDataLoaded || (_userProfileData && _userProfileData.id !== _currentUser.id))) { // Simple check for now
-                    console.log("[MapsModule] Conditions met, calling _loadDataForMainMapView.");
-                    _loadDataForMainMapView();
-                } else if(mainMapInstance) {
-                    console.log("[MapsModule] Map data appears current or no need to refresh for this activation.");
-                }
-            });
-        },
-    
-        // ... (rest of App.Maps methods: onUserProfileUpdated, initAddressAutocomplete, showLocationPicker, etc.)
-        // ... (ensure _loadDataForMainMapView, _clearMainMapMarkers are also present and correct)
-        // ... (ensure modal functions are present and correct)
-    };
-
     function _initLocationPickerMap(initialCoords, currentAddressText, callback) {
         if (!_domElements.pickerMapContainer) {
             console.error("[MapsModule] Location picker map container not found.");
@@ -409,20 +333,20 @@
             return;
         }
         _domElements.pickerMapContainer.classList.remove('hidden');
-        _domElements.pickerMapContainer.innerHTML = '<p class="map-loading-message p-4 text-gray-600">Loading map picker...</p>';
+        _domElements.pickerMapContainer.innerHTML = `<p class="map-loading-message p-4 text-stone-500">Loading map picker...</p>`; // Themed text
         currentPickerCallback = callback;
 
-        _whenGoogleMapsReady(() => { // Ensures geocoder is ready
+        _whenGoogleMapsReady(() => { 
             if (!geocoder) {
                 console.error("[MapsModule] Geocoder not ready for picker map.");
-                 _domElements.pickerMapContainer.innerHTML = '<p class="map-loading-message text-red-500 p-4">Map services error for picker.</p>';
+                 _domElements.pickerMapContainer.innerHTML = `<p class="map-loading-message text-red-500 p-4">Map services error for picker.</p>`;
                 return;
             }
             let centerPos = initialCoords || INDIA_CENTER;
             let zoomLevel = initialCoords ? DETAIL_ZOOM : DEFAULT_ZOOM;
 
             const createMapWithPosition = (pos, zl) => {
-                 _domElements.pickerMapContainer.innerHTML = ''; // Clear loading
+                 _domElements.pickerMapContainer.innerHTML = ''; 
                 try {
                     if (!locationPickerMap) {
                         locationPickerMap = new google.maps.Map(_domElements.pickerMapContainer, {
@@ -435,7 +359,8 @@
 
                     if (!locationPickerMarker) {
                         locationPickerMarker = new google.maps.Marker({
-                            position: pos, map: locationPickerMap, draggable: true, title: "Drag to set location"
+                            position: pos, map: locationPickerMap, draggable: true, title: "Drag to set location",
+                            icon: { path: google.maps.SymbolPath.CIRCLE, scale: 8, fillColor: '#059669', fillOpacity: 1, strokeColor: '#ffffff', strokeWeight: 2 } // emerald-600
                         });
                         locationPickerMarker.addListener('dragend', _handlePickerMarkerDragEnd);
                     } else {
@@ -452,7 +377,7 @@
                 geocoder.geocode({ address: currentAddressText, componentRestrictions: { country: 'IN' } }, (results, status) => {
                     if (status === 'OK' && results[0]) {
                         createMapWithPosition(results[0].geometry.location, DETAIL_ZOOM);
-                    } else { createMapWithPosition(INDIA_CENTER, DEFAULT_ZOOM); } // Fallback
+                    } else { createMapWithPosition(INDIA_CENTER, DEFAULT_ZOOM); } 
                 });
             } else {
                 createMapWithPosition(centerPos, zoomLevel);
@@ -464,8 +389,11 @@
         const latLng = event.latLng;
         if (_domElements.reverseGeocodeResultDiv) _domElements.reverseGeocodeResultDiv.textContent = 'Finding address...';
         
-        _whenGoogleMapsReady(() => { // Ensure geocoder is ready
-            if (!geocoder) { /* ... error ... */ return; }
+        _whenGoogleMapsReady(() => { 
+            if (!geocoder) { 
+                if (_domElements.reverseGeocodeResultDiv) _domElements.reverseGeocodeResultDiv.textContent = 'Geocoder service not ready.';
+                return; 
+            }
             geocoder.geocode({ location: latLng }, (results, status) => {
                 if (status === 'OK' && results[0]) {
                     const pickedLocation = { lat: latLng.lat(), lng: latLng.lng(), address: results[0].formatted_address };
@@ -480,9 +408,6 @@
     }
 
     async function _viewUserProfileInModal(userId, userRole, userName, userDistance) {
-        // ... (Modal population logic - assumed to be mostly correct from previous version)
-        // Ensure all sanitizeHTML and createSafeElement calls are used.
-        // The key is that this function is called.
         if (!_domElements.userProfileModal || !_domElements.modalUserName || !_domElements.modalUserRole || !_domElements.modalUserDistance ||
             !_domElements.modalLoading || !_domElements.modalError || !_domElements.modalWalkerContent || !_domElements.modalOwnerContent) {
             console.error("[MapsModule] One or more modal DOM elements are missing.");
@@ -490,8 +415,8 @@
         }
         console.log(`[MapsModule] Viewing profile for modal: ${userRole} ${userName} (ID: ${userId})`);
 
-        _domElements.modalUserName.textContent = window.pawsitiveCommon.sanitizeHTML(userName || 'User');
-        _domElements.modalUserRole.textContent = userRole === 'owner' ? 'Pet Owner' : 'Dog Walker';
+        _domElements.modalUserName.textContent = sanitizeHTML(userName || 'User');
+        _domElements.modalUserRole.textContent = userRole === 'owner' ? 'Pet Owner' : 'Dog Walker'; // This is already themed in HTML
         _domElements.modalUserDistance.textContent = userDistance ? `${userDistance} km away` : '';
 
         _domElements.modalLoading.classList.remove('hidden');
@@ -499,7 +424,7 @@
         _domElements.modalWalkerContent.classList.add('hidden');
         _domElements.modalOwnerContent.classList.add('hidden');
         _domElements.userProfileModal.classList.remove('hidden');
-        _domElements.userProfileModal.classList.add('flex'); // Tailwind class for flex display
+        _domElements.userProfileModal.classList.add('flex'); 
 
         try {
             const { data: profileData, error: profileError } = await _supabase
@@ -509,12 +434,13 @@
                 .single();
             if (profileError) throw profileError;
 
-            const displayEmail = 'Email not publicly available'; 
+            // Email is intentionally not displayed directly from profileData.email for privacy
+            const displayEmailForModal = 'Contact via platform'; 
 
             if (profileData.role === 'walker') {
-                _populateWalkerModalContent(profileData, displayEmail);
+                _populateWalkerModalContent(profileData, displayEmailForModal);
             } else if (profileData.role === 'owner') {
-                await _populateOwnerModalContent(profileData, displayEmail, userId);
+                await _populateOwnerModalContent(profileData, displayEmailForModal, userId);
             }
             _domElements.modalLoading.classList.add('hidden');
         } catch (error) {
@@ -527,27 +453,26 @@
     }
     
     function _populateWalkerModalContent(profile, email) {
-        // Check if _domElements.modalWalkerContent is valid
         if (!_domElements.modalWalkerContent) {
             console.error("[MapsModule] modalWalkerContent DOM element is null.");
             return;
         }
         const el = (selector) => _domElements.modalWalkerContent.querySelector(selector);
     
-        const walkerAbout = el('#modal-walker-about');
-        if (walkerAbout) walkerAbout.textContent = window.pawsitiveCommon.sanitizeHTML(profile.about_me || 'N/A');
+        const walkerAbout = el('#modal-walker-about'); // Assumes this ID exists within modalWalkerContent
+        if (walkerAbout) walkerAbout.innerHTML = sanitizeHTML(profile.about_me || 'N/A').replace(/\n/g, '<br>'); // Themed classes on parent
     
         const walkerExpYears = el('#modal-walker-experience-years');
         if (walkerExpYears) walkerExpYears.textContent = profile.experience_years ? `${profile.experience_years} years` : 'N/A';
     
         const walkerExpSummary = el('#modal-walker-experience-summary');
-        if (walkerExpSummary) walkerExpSummary.textContent = window.pawsitiveCommon.sanitizeHTML(profile.experience_summary || 'N/A');
+        if (walkerExpSummary) walkerExpSummary.innerHTML = sanitizeHTML(profile.experience_summary || 'N/A').replace(/\n/g, '<br>');
     
         const walkerEmail = el('#modal-walker-email');
-        if (walkerEmail) walkerEmail.textContent = window.pawsitiveCommon.sanitizeHTML(email);
+        if (walkerEmail) walkerEmail.textContent = sanitizeHTML(email); // email is 'Contact via platform'
     
         const walkerMobile = el('#modal-walker-mobile');
-        if (walkerMobile) walkerMobile.textContent = window.pawsitiveCommon.sanitizeHTML(profile.mobile || 'N/A');
+        if (walkerMobile) walkerMobile.textContent = sanitizeHTML(profile.mobile || 'Not Provided');
     
         const availabilityDiv = el('#modal-walker-availability');
         if (availabilityDiv) {
@@ -559,11 +484,11 @@
                     DAYS_OF_WEEK.forEach(day => {
                         if (schedule[day] && schedule[day].length > 0) {
                             hasAvailability = true;
-                            const dayContainer = window.pawsitiveCommon.createSafeElement('div', {className: 'mb-1'});
-                            dayContainer.appendChild(window.pawsitiveCommon.createSafeElement('strong', {className: 'block text-xs'}, day));
+                            const dayContainer = createSafeElement('div', {className: 'mb-1'});
+                            dayContainer.appendChild(createSafeElement('strong', {className: 'block text-xs font-medium text-stone-700'}, day)); // Themed
                             schedule[day].forEach(slot => {
                                 const [from, to] = slot.split('-');
-                                dayContainer.appendChild(window.pawsitiveCommon.createSafeElement('span', {className: 'text-xs block'}, `${formatTimeDisplay(from)} - ${formatTimeDisplay(to)}`));
+                                dayContainer.appendChild(createSafeElement('span', {className: 'text-xs block text-stone-600 ml-2'}, `${formatTimeDisplay(from)} - ${formatTimeDisplay(to)}`)); // Themed
                             });
                             availabilityDiv.appendChild(dayContainer);
                         }
@@ -585,36 +510,40 @@
         const el = (selector) => _domElements.modalOwnerContent.querySelector(selector);
     
         const ownerEmail = el('#modal-owner-email');
-        if(ownerEmail) ownerEmail.textContent = window.pawsitiveCommon.sanitizeHTML(email);
+        if(ownerEmail) ownerEmail.textContent = sanitizeHTML(email); // email is 'Contact via platform'
     
         const ownerMobile = el('#modal-owner-mobile');
-        if(ownerMobile) ownerMobile.textContent = window.pawsitiveCommon.sanitizeHTML(profile.mobile || 'N/A');
+        if(ownerMobile) ownerMobile.textContent = sanitizeHTML(profile.mobile || 'Not Provided');
     
         const ownerAddress = el('#modal-owner-address');
-        if(ownerAddress) ownerAddress.textContent = window.pawsitiveCommon.sanitizeHTML(profile.address || 'N/A');
+        if(ownerAddress) ownerAddress.textContent = sanitizeHTML(profile.address || 'N/A');
     
         const ownerComm = el('#modal-owner-communication');
-        if(ownerComm) ownerComm.textContent = window.pawsitiveCommon.sanitizeHTML(profile.preferred_communication || 'N/A');
+        if(ownerComm) ownerComm.textContent = sanitizeHTML(profile.preferred_communication || 'N/A');
     
         const ownerNotes = el('#modal-owner-notes');
-        if(ownerNotes) ownerNotes.textContent = window.pawsitiveCommon.sanitizeHTML(profile.owner_notes_for_walker || 'N/A');
+        if(ownerNotes) ownerNotes.innerHTML = sanitizeHTML(profile.owner_notes_for_walker || 'N/A').replace(/\n/g, '<br>');
     
-        const dogsDiv = el('#modal-owner-dogs');
-        const noDogsMsg = el('#modal-no-dogs');
+        const dogsDiv = el('#modal-owner-dogs'); // This is the container for dog cards
+        const noDogsMsg = el('#modal-no-dogs'); // This is the <p> tag for "No dogs available"
     
         if (dogsDiv && noDogsMsg) {
             dogsDiv.innerHTML = ''; 
             noDogsMsg.classList.add('hidden');
     
             try {
-                const { data: dogs, error } = await _supabase.from('dogs').select('*').eq('owner_id', ownerId);
+                const { data: dogs, error } = await _supabase.from('dogs').select('name, breed, age, gender').eq('owner_id', ownerId);
                 if (error) throw error;
                 if (dogs && dogs.length > 0) {
                     dogs.forEach(dog => {
-                        const dogCard = window.pawsitiveCommon.createSafeElement('div', {className: 'dog-card p-3 border rounded mb-2 text-sm'});
-                        dogCard.appendChild(window.pawsitiveCommon.createSafeElement('h5', {className: 'font-semibold text-base mb-1'}, dog.name));
+                        // THEMED Dog Card
+                        const dogCard = createSafeElement('div', {className: 'bg-emerald-50 p-3 border border-emerald-200 rounded-lg mb-2 text-sm shadow-sm'});
+                        dogCard.appendChild(createSafeElement('h5', {className: 'font-serif font-semibold text-base text-emerald-700 mb-1'}, sanitizeHTML(dog.name)));
                         const addDogDetail = (label, value) => {
-                            if (value) dogCard.appendChild(window.pawsitiveCommon.createSafeElement('p', {className:'text-xs'}, `${label}: ${window.pawsitiveCommon.sanitizeHTML(value)}`));
+                            if (value) dogCard.appendChild(createSafeElement('p', {className:'text-xs text-stone-600'}, [ // Themed
+                                createSafeElement('strong', {className: 'text-stone-700'}, `${label}: `), // Themed
+                                document.createTextNode(sanitizeHTML(String(value)))
+                            ]));
                         };
                         addDogDetail('Breed', dog.breed);
                         addDogDetail('Age', dog.age ? `${dog.age} years` : null);
@@ -623,6 +552,7 @@
                     });
                 } else {
                     noDogsMsg.classList.remove('hidden');
+                    noDogsMsg.textContent = 'No dogs listed by this owner.';
                 }
             } catch(e) {
                 dogsDiv.textContent = 'Error loading dog details.'; console.error("Error fetching dogs for modal:", e);
@@ -637,11 +567,11 @@
         init: function(supabaseClient, user, profileData, domRefs) {
             _supabase = supabaseClient;
             _currentUser = user;
-            _userProfileData = profileData; // Initial profile data
+            _userProfileData = profileData; 
             _domElements = domRefs;
 
             console.log('[MapsModule] Initialized. User:', _userProfileData.full_name, 'DOM Refs:', _domElements);
-            this.loadGoogleMapsApiKeyAndScript(); // Load API script
+            this.loadGoogleMapsApiKeyAndScript(); 
 
             if (_domElements.closeProfileModalButton && _domElements.userProfileModal) {
                 _domElements.closeProfileModalButton.addEventListener('click', () => {
@@ -662,15 +592,13 @@
                     _initMainMapViewMap();
                 } else {
                     console.log("[MapsModule] Main map instance exists. Triggering resize.");
-                     setTimeout(() => { // Ensure DOM is fully visible
+                     setTimeout(() => { 
                         if (google && mainMapInstance && _domElements.mapContainer.offsetHeight > 0) {
                             google.maps.event.trigger(mainMapInstance, 'resize');
                             console.log("[MapsModule] Resize on existing mainMapInstance (onMapViewActivated).");
                         }
                     }, 50);
                 }
-
-                // Load data if map is now initialized and data isn't loaded or profile context changed
                 if (mainMapInstance && (!mainMapDataLoaded || (updatedProfileData && updatedProfileData.id !== _currentUser.id))) {
                      console.log("[MapsModule] Conditions met, calling _loadDataForMainMapView.");
                     _loadDataForMainMapView();
@@ -684,20 +612,17 @@
         
         onUserProfileUpdated: function(updatedProfile) {
             console.log("[MapsModule] User profile was updated. New profile data:", updatedProfile);
-            _userProfileData = updatedProfile; // Update internal profile data
-            mainMapDataLoaded = false; // Mark map data as stale
-            // If map view is currently active, reload its data
+            _userProfileData = updatedProfile; 
+            mainMapDataLoaded = false; 
             if (_domElements.mapContainer && _domElements.mapContainer.closest('.content-section.active')) {
                  console.log("[MapsModule] Map view is active, reloading data due to profile update.");
-                 _whenGoogleMapsReady(() => { // Ensure API is ready before trying to load data
+                 _whenGoogleMapsReady(() => { 
                      if (mainMapInstance) _loadDataForMainMapView();
                  });
             }
         },
 
         loadGoogleMapsApiKeyAndScript: async function() {
-            // ... (Keep the existing robust loading logic from your previous mapsModule.js)
-            // Ensure the callback in script.src is 'initMap' to match profile.html
             if (document.getElementById(MAPS_SCRIPT_ID) || mapsApiLoading) {
                 console.log("[MapsModule] Google Maps script already loaded or loading attempt in progress.");
                 return;
@@ -705,7 +630,11 @@
             mapsApiLoading = true;
             console.log("[MapsModule] Attempting to load Google Maps API Key and Script...");
 
-            if (_domElements.mapContainer) { /* ... set loading message ... */ }
+            if (_domElements.mapContainer) {
+                const existingMsg = _domElements.mapContainer.querySelector('.map-loading-message');
+                if(existingMsg) existingMsg.textContent = "Fetching API key...";
+                else _domElements.mapContainer.innerHTML = '<p class="map-loading-message text-stone-600 p-4">Fetching API key...</p>';
+            }
             
             try {
                 const sessionResponse = await _supabase.auth.getSession();
@@ -717,46 +646,54 @@
                     method: 'POST',
                     headers: { 'Authorization': `Bearer ${session.access_token}`, 'apikey': window.pawsitiveCommon.SUPABASE_ANON_KEY }
                 });
-                if (!response.ok) { /* ... handle error ... */ throw new Error(`Failed to fetch API key: ${response.status}`); }
+                if (!response.ok) { throw new Error(`Failed to fetch API key: ${response.status}`); }
                 const data = await response.json();
                 const apiKey = data.apiKey;
                 if (!apiKey) throw new Error('API key not received.');
 
                 console.log("[MapsModule] API Key received.");
                 if (_domElements.mapContainer && _domElements.mapContainer.querySelector('.map-loading-message')) {
-                     _domElements.mapContainer.querySelector('.map-loading-message').remove();
+                     const loadingMsgEl = _domElements.mapContainer.querySelector('.map-loading-message');
+                     if(loadingMsgEl) loadingMsgEl.textContent = 'Loading Google Maps...'; // Update message
                 }
 
                 const script = document.createElement('script');
                 script.id = MAPS_SCRIPT_ID;
                 if (typeof apiKey !== 'string' || !/^[A-Za-z0-9_-]+$/.test(apiKey)) throw new Error('Invalid API key format');
                 
-                // ***** ENSURE THIS USES 'initMap' if that's your global function in profile.html *****
                 script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&callback=initMap&libraries=marker,geometry,places&v=beta`;
                 
-                script.async = true; script.defer = true; // Defer is fine, async also good.
-                script.onerror = () => { /* ... handle script load error ... */ };
+                script.async = true; script.defer = true; 
+                script.onerror = () => { 
+                    console.error("[MapsModule] Google Maps script failed to load.");
+                    if (_domElements.mapContainer) _domElements.mapContainer.innerHTML = '<p class="map-loading-message text-red-500 p-4">Error: Could not load Google Maps script.</p>';
+                    mapsApiLoading = false;
+                };
                 document.head.appendChild(script);
                 console.log("[MapsModule] Google Maps script tag appended with callback 'initMap'.");
 
-            } catch (error) { /* ... handle fetch/setup error ... */ }
+            } catch (error) { 
+                console.error("[MapsModule] Error in loadGoogleMapsApiKeyAndScript:", error);
+                if (_domElements.mapContainer) _domElements.mapContainer.innerHTML = `<p class="map-loading-message text-red-500 p-4">Error fetching map resources: ${error.message}</p>`;
+                mapsApiLoading = false;
+            }
         },
 
-        _triggerInternalApiReady: _handleGoogleMapsApiLoadedAndTriggered, // Called by global initMap
+        _triggerInternalApiReady: _handleGoogleMapsApiLoadedAndTriggered,
 
         initAddressAutocomplete: function(inputElement, onPlaceSelectedCallback) {
              _whenGoogleMapsReady(() => {
-                if (!google.maps.places || !google.maps.places.AutocompleteService) { // Check AutocompleteService
+                if (!google.maps.places || !google.maps.places.Autocomplete) { 
                     console.error("[MapsModule] Google Places Autocomplete service not available.");
                     return;
                 }
-                if (addressAutocomplete) google.maps.event.clearInstanceListeners(addressAutocomplete); // Clear old
+                if (addressAutocomplete) google.maps.event.clearInstanceListeners(addressAutocomplete); 
                 try {
-                    const options = { componentRestrictions: { country: "in" }, fields: ["geometry.location", "formatted_address", "name"], strictBounds: false };
-                    addressAutocomplete = new google.maps.places.Autocomplete(inputElement, options); // Use the service
+                    const options = { componentRestrictions: { country: "in" }, fields: ["geometry.location", "formatted_address", "name"], types: ['address'], strictBounds: false };
+                    addressAutocomplete = new google.maps.places.Autocomplete(inputElement, options); 
                     addressAutocomplete.addListener('place_changed', () => {
                         const place = addressAutocomplete.getPlace();
-                        if (onPlaceSelectedCallback) onPlaceSelectedCallback(place); // place can be null if no valid selection
+                        if (onPlaceSelectedCallback) onPlaceSelectedCallback(place); 
                     });
                     inputElement.addEventListener('keydown', (event) => { if (event.key === 'Enter') event.preventDefault(); });
                     console.log("[MapsModule] Address Autocomplete initialized for:", inputElement.id);
@@ -765,7 +702,7 @@
         },
 
         showLocationPicker: function(pickerContainerElement, initialCoords, currentAddressText, onLocationPickedCallback) {
-            _domElements.pickerMapContainer = pickerContainerElement; // Update internal ref if needed
+            _domElements.pickerMapContainer = pickerContainerElement; 
             _initLocationPickerMap(initialCoords, currentAddressText, onLocationPickedCallback);
         },
         hideLocationPicker: function() {
@@ -773,7 +710,7 @@
                  _domElements.pickerMapContainer.classList.add('hidden');
             }
             if(locationPickerMarker) locationPickerMarker.setMap(null);
-            currentPickerCallback = null; // Clear callback
+            currentPickerCallback = null; 
         }
     };
 
