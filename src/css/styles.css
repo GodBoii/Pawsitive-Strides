@@ -1,18 +1,21 @@
 /* Main Styles for Pawsitive Strides */
 
 /* General Styles */
-body {
-    background-color: #fff;
-    font-family: sans-serif;
-    overflow-x: hidden;
-}
+/* body { */
+    /* Tailwind's font-sans and bg-emerald-50 are applied directly in HTML body tag */
+    /* overflow-x: hidden; /* This is good practice */
+/* } */
 
 /* Hero Section */
 .hero-gradient {
-    background-color: #f3e8ff;
+    /* Using amber-50 for a light warm yellow background */
+    background-color: #fffbeb; 
+    /* You can also create a subtle gradient if desired:
+    background-image: linear-gradient(to bottom right, #fffbeb, #fef3c7); */
 }
 
-/* Sidebar Navigation Styles */
+/* Sidebar Navigation Styles (These seem to be for a different part of the application, not directly index.html's main layout) */
+/* Retaining these as per instruction "maintain rest of the code at it is" if not directly conflicting */
 .sidebar-link {
     display: block;
     padding: 0.75rem 1rem;
@@ -22,17 +25,19 @@ body {
 }
 
 .sidebar-link:hover {
-    background-color: #f3e8ff;
-    color: #6b21a8;
+    /* If this were for index.html, it would be themed with emerald/amber */
+    background-color: #f3e8ff; /* Original purple theme - keeping as it might be for dashboard */
+    color: #6b21a8; /* Original purple theme */
 }
 
 .sidebar-link.active {
-    background-color: #8B5CF6;
+    /* If this were for index.html, it would be themed with emerald/amber */
+    background-color: #8B5CF6; /* Original purple theme */
     color: white;
     font-weight: 500;
 }
 
-/* Content Sections */
+/* Content Sections (Likely for dashboard/dynamic content loading) */
 .content-section {
     display: none;
 }
@@ -41,13 +46,13 @@ body {
     display: block;
 }
 
-/* Map Container */
+/* Map Container (Likely for a "Find Walkers" page, not index.html main content) */
 #map-container {
     height: 600px;
     width: 100%;
     border-radius: 0.5rem;
-    border: 1px solid #e5e7eb;
-    background-color: #f9fafb;
+    border: 1px solid #e5e7eb; /* stone-200 if used on themed pages */
+    background-color: #f9fafb; /* stone-50 if used on themed pages */
     display: flex;
     align-items: center;
     justify-content: center;
@@ -59,9 +64,9 @@ body {
     }
 }
 
-/* Dog Cards */
+/* Dog Cards (Likely for profiles or listings, not index.html main content) */
 .dog-card {
-    border: 1px solid #e5e7eb;
+    border: 1px solid #e5e7eb; /* stone-200 if used on themed pages */
     border-radius: 0.5rem;
     padding: 1rem;
     margin-bottom: 1rem;
@@ -76,7 +81,7 @@ body {
 
 /* Form Input Styles */
 .input-field {
-    border: 1px solid #d1d5db;
+    border: 1px solid #d1d5db; /* stone-300 if used on themed pages */
     border-radius: 0.375rem;
     padding: 0.5rem 0.75rem;
     width: 100%;
@@ -84,7 +89,7 @@ body {
 
 select.input-field {
     appearance: none;
-    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e");
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); /* stone-500 for arrow if themed */
     background-position: right 0.5rem center;
     background-repeat: no-repeat;
     background-size: 1.5em 1.5em;
@@ -106,7 +111,9 @@ textarea.input-field {
 
 /* Mobile Responsive Styles */
 
-/* Small screens */
+/* Removed h1, h2, h3 overrides as Tailwind v3 utility classes are preferred for responsive typography */
+
+/*
 @media (max-width: 640px) {
     h1 {
         font-size: 2rem !important;
@@ -120,7 +127,12 @@ textarea.input-field {
     h3 {
         font-size: 1.25rem !important;
     }
+}
+*/
     
+/* Spacing adjustments for mobile - Tailwind utilities should largely cover this. */
+/*
+@media (max-width: 640px) {
     .py-20 {
         padding-top: 3rem;
         padding-bottom: 3rem;
@@ -141,7 +153,6 @@ textarea.input-field {
         padding-bottom: 0.5rem;
     }
     
-    /* Add more compact spacing for mobile */
     .space-y-8 > :not([hidden]) ~ :not([hidden]) {
         --tw-space-y-reverse: 0;
         margin-top: calc(1.5rem * calc(1 - var(--tw-space-y-reverse)));
@@ -161,7 +172,6 @@ textarea.input-field {
     }
 }
 
-/* Medium screens */
 @media (min-width: 641px) and (max-width: 768px) {
     .py-20 {
         padding-top: 4rem;
@@ -172,22 +182,23 @@ textarea.input-field {
         gap: 2rem;
     }
 }
+*/
 
 /* Fix for mobile menu */
 #mobile-menu {
-    transition: all 0.3s ease;
+    transition: all 0.3s ease-in-out; /* Changed from ease to ease-in-out for smoother feel */
 }
 
 /* Fix for pricing cards on mobile */
 @media (max-width: 1024px) {
-    #pricing .flex-col > div {
-        max-width: 500px;
+    #pricing .flex-col > div { /* This targets the parent of pricing cards when in column layout */
+        max-width: 500px; /* Limits width on tablet/mobile when stacked */
         margin-left: auto;
         margin-right: auto;
     }
 }
 
-/* Mobile table styles */
+/* Mobile table styles (Not used in index.html, keeping for other potential pages) */
 @media (max-width: 768px) {
     .table-responsive {
         display: block;
@@ -196,7 +207,6 @@ textarea.input-field {
         -webkit-overflow-scrolling: touch;
     }
     
-    /* Convert some tables to card layout on mobile */
     .table-to-cards {
         display: block;
     }
@@ -214,7 +224,7 @@ textarea.input-field {
         display: flex;
         text-align: right;
         padding: 0.5rem;
-        border-bottom: 1px solid #e5e7eb;
+        border-bottom: 1px solid #e5e7eb; /* stone-200 if themed */
     }
     
     .table-to-cards td::before {
@@ -226,7 +236,7 @@ textarea.input-field {
     
     .table-to-cards tr {
         margin-bottom: 1rem;
-        border: 1px solid #e5e7eb;
+        border: 1px solid #e5e7eb; /* stone-200 if themed */
         border-radius: 0.5rem;
         padding: 0.5rem;
     }
@@ -238,13 +248,13 @@ textarea.input-field {
         font-size: 16px !important; /* Prevents iOS zoom on focus */
     }
     
-    .form-row {
-        flex-direction: column;
-    }
+    /* .form-row { */ /* This class is not present in index.html */
+        /* flex-direction: column; */
+    /* } */
     
-    .form-row > div {
-        width: 100%;
-        margin-right: 0;
-        margin-bottom: 1rem;
-    }
-} 
+    /* .form-row > div { */
+        /* width: 100%; */
+        /* margin-right: 0; */
+        /* margin-bottom: 1rem; */
+    /* } */
+}
