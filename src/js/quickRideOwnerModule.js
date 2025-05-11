@@ -11,9 +11,8 @@
         // submitQuickRideBtn, cancelNewQuickRideBtn
     };
 
-    // Ensure pawsitiveCommon and its utilities are loaded
     if (!window.pawsitiveCommon || !window.pawsitiveCommon.createSafeElement || !window.pawsitiveCommon.sanitizeHTML) {
-        console.error("[QuickRideOwnerModule] pawsitiveCommon or its utilities (createSafeElement, sanitizeHTML) not found. Module cannot function correctly.");
+        console.error("[QuickRideOwnerModule] pawsitiveCommon or its utilities not found.");
         App.QuickRideOwner = { init: () => {}, refreshMyRides: () => {} };
         return;
     }
@@ -33,13 +32,15 @@
 
     function getStatusBadgeClass(status) {
         switch (status) {
-            case 'pending_acceptance': return 'bg-amber-100 text-amber-800'; // Updated
-            case 'accepted': return 'bg-emerald-100 text-emerald-800'; // Updated
-            case 'completed': return 'bg-stone-100 text-stone-700'; // Updated (using stone for neutral completed)
+            case 'pending_acceptance': return 'bg-amber-100 text-amber-800';
+            case 'accepted': return 'bg-emerald-100 text-emerald-800';
+            case 'completed': return 'bg-stone-100 text-stone-700';
             case 'cancelled_by_owner':
             case 'cancelled_by_walker':
-                return 'bg-red-100 text-red-700'; // Remains red
-            default: return 'bg-stone-100 text-stone-700'; // Updated
+                return 'bg-red-100 text-red-700';
+            case 'expired_pending': // New custom status for display
+                return 'bg-stone-100 text-stone-500'; // Greyed out
+            default: return 'bg-stone-100 text-stone-700';
         }
     }
 
@@ -57,20 +58,30 @@
         }
         _domElements.noMyRidesMessage.classList.add('hidden');
 
+        const now = new Date(); // Get current time once for comparison
+
         rides.forEach(ride => {
-            // Card styling should match the .quickride-card class defined (and themed) in owner-dashboard.html's inline styles
-            // or apply Tailwind classes directly for full control here.
-            // Assuming .quickride-card is styled correctly in dashboard HTML style block.
-            const card = createSafeElement('div', { className: 'quickride-card p-4 mb-4' }); // Uses .quickride-card
+            const card = createSafeElement('div', { className: 'quickride-card p-4 mb-4' }); 
 
             const header = createSafeElement('div', { className: 'flex justify-between items-center mb-3' });
             const dogNameText = ride.dogs && ride.dogs.name ? sanitizeHTML(ride.dogs.name) : 'Dog (Name N/A)';
-            // Updated heading style
             header.appendChild(createSafeElement('h4', { className: 'font-serif text-xl font-semibold text-emerald-700' }, `Walk for ${dogNameText}`));
 
-            const statusBadgeClass = getStatusBadgeClass(ride.status);
-            const statusText = sanitizeHTML(ride.status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()));
-            header.appendChild(createSafeElement('span', {className: `px-3 py-1 text-xs font-semibold rounded-full ${statusBadgeClass}`}, statusText));
+            let displayStatus = ride.status;
+            let statusTextContent = sanitizeHTML(ride.status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()));
+
+            // --- NEW: Check for expired pending rides ---
+            const rideDateTime = new Date(ride.walk_datetime);
+            let isExpiredPending = false;
+            if (ride.status === 'pending_acceptance' && rideDateTime < now) {
+                displayStatus = 'expired_pending'; // Use this for styling with getStatusBadgeClass
+                statusTextContent = 'Expired - Not Accepted';
+                isExpiredPending = true;
+            }
+            // --- END NEW ---
+
+            const statusBadgeClass = getStatusBadgeClass(displayStatus);
+            header.appendChild(createSafeElement('span', {className: `px-3 py-1 text-xs font-semibold rounded-full ${statusBadgeClass}`}, statusTextContent));
             card.appendChild(header);
 
             const detailsGrid = createSafeElement('div', { className: 'grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-sm text-stone-600' });
@@ -113,7 +124,8 @@
 
             const actionsDiv = createSafeElement('div', { className: 'mt-4 pt-3 border-t border-stone-200 flex justify-end space-x-3' });
 
-            if (ride.status === 'pending_acceptance') {
+            // --- MODIFIED: Hide Cancel button if expired_pending ---
+            if (ride.status === 'pending_acceptance' && !isExpiredPending) {
                 const cancelButton = createSafeElement('button', {
                     className: 'cancel-ride-btn text-red-600 hover:text-red-700 text-sm font-medium focus:outline-none flex items-center px-3 py-1.5 rounded-md hover:bg-red-50 transition-colors',
                     'data-ride-id': ride.id
@@ -125,9 +137,10 @@
                 ]);
                 actionsDiv.appendChild(cancelButton);
             }
+            // --- END MODIFIED ---
+
 
             if (ride.status === 'accepted' && ride.accepted_walker_id) {
-                // Updated button style
                 const viewWalkerButton = createSafeElement('button', {
                     className: 'view-walker-profile-btn bg-emerald-100 hover:bg-emerald-200 text-emerald-700 text-xs font-semibold py-1.5 px-3 rounded-md transition-colors duration-150',
                     'data-walker-id': ride.accepted_walker_id,
@@ -164,9 +177,10 @@
         if (!_supabase || !_currentUser || !_domElements.noMyRidesMessage) return;
         _domElements.noMyRidesMessage.textContent = 'Loading your rides...';
         _domElements.noMyRidesMessage.classList.remove('hidden');
-        _domElements.noMyRidesMessage.style.color = 'inherit'; // Reset color
+        _domElements.noMyRidesMessage.style.color = 'inherit'; 
 
         try {
+            // No change needed in the query itself, the display logic will handle expired pending rides.
             const { data, error } = await _supabase
                 .from('quick_rides')
                 .select(`
@@ -192,11 +206,11 @@
             console.error('[QuickRideOwnerModule] Error fetching my rides:', error);
             if (_domElements.noMyRidesMessage) {
                  _domElements.noMyRidesMessage.textContent = `Error loading rides: ${error.message}`;
-                 _domElements.noMyRidesMessage.style.color = 'red'; // Consistent with error message divs
+                 _domElements.noMyRidesMessage.style.color = 'red'; 
             } else {
                 if(_domElements.formMessage) {
                      _domElements.formMessage.textContent = `Error loading rides: ${error.message}`;
-                     _domElements.formMessage.className = 'quickride-form-message ml-4 text-sm text-red-700'; // Themed error
+                     _domElements.formMessage.className = 'quickride-form-message ml-4 text-sm text-red-700'; 
                 }
             }
         }
@@ -223,7 +237,7 @@
         if (!_domElements.newRideForm || !_domElements.formMessage || !_domElements.submitQuickRideBtn) return;
 
         _domElements.formMessage.textContent = 'Processing...';
-        _domElements.formMessage.className = 'quickride-form-message ml-4 text-sm text-stone-600'; // Themed processing
+        _domElements.formMessage.className = 'quickride-form-message ml-4 text-sm text-stone-600'; 
         _domElements.submitQuickRideBtn.disabled = true;
         _domElements.submitQuickRideBtn.textContent = 'Posting...';
 
@@ -234,28 +248,28 @@
 
         if (!dogId) {
             _domElements.formMessage.textContent = 'Please select a dog.';
-            _domElements.formMessage.className = 'quickride-form-message ml-4 text-sm text-red-700 border border-red-300 bg-red-50 p-2 rounded-md'; // Themed error
+            _domElements.formMessage.className = 'quickride-form-message ml-4 text-sm text-red-700 border border-red-300 bg-red-50 p-2 rounded-md';
             _domElements.submitQuickRideBtn.disabled = false;
             _domElements.submitQuickRideBtn.textContent = 'Post Ride';
             return;
         }
         if (!walkDatetime) {
             _domElements.formMessage.textContent = 'Please select a date and time for the walk.';
-            _domElements.formMessage.className = 'quickride-form-message ml-4 text-sm text-red-700 border border-red-300 bg-red-50 p-2 rounded-md'; // Themed error
+            _domElements.formMessage.className = 'quickride-form-message ml-4 text-sm text-red-700 border border-red-300 bg-red-50 p-2 rounded-md';
             _domElements.submitQuickRideBtn.disabled = false;
             _domElements.submitQuickRideBtn.textContent = 'Post Ride';
             return;
         }
         if (new Date(walkDatetime) <= new Date()) {
             _domElements.formMessage.textContent = 'Walk date and time must be in the future.';
-            _domElements.formMessage.className = 'quickride-form-message ml-4 text-sm text-red-700 border border-red-300 bg-red-50 p-2 rounded-md'; // Themed error
+            _domElements.formMessage.className = 'quickride-form-message ml-4 text-sm text-red-700 border border-red-300 bg-red-50 p-2 rounded-md';
             _domElements.submitQuickRideBtn.disabled = false;
             _domElements.submitQuickRideBtn.textContent = 'Post Ride';
             return;
         }
         if (isNaN(payAmount) || payAmount <= 0) {
             _domElements.formMessage.textContent = 'Please enter a valid pay amount greater than zero.';
-            _domElements.formMessage.className = 'quickride-form-message ml-4 text-sm text-red-700 border border-red-300 bg-red-50 p-2 rounded-md'; // Themed error
+            _domElements.formMessage.className = 'quickride-form-message ml-4 text-sm text-red-700 border border-red-300 bg-red-50 p-2 rounded-md';
             _domElements.submitQuickRideBtn.disabled = false;
             _domElements.submitQuickRideBtn.textContent = 'Post Ride';
             return;
@@ -272,7 +286,7 @@
             if (error) throw error;
 
             _domElements.formMessage.textContent = 'Quick Ride posted successfully!';
-            _domElements.formMessage.className = 'quickride-form-message ml-4 text-sm text-emerald-700 border border-emerald-300 bg-emerald-50 p-2 rounded-md'; // Themed success
+            _domElements.formMessage.className = 'quickride-form-message ml-4 text-sm text-emerald-700 border border-emerald-300 bg-emerald-50 p-2 rounded-md'; 
             _domElements.newRideForm.reset();
             toggleNewRideForm(false);
             fetchMyRides();
@@ -286,7 +300,7 @@
         } catch (error) {
             console.error('[QuickRideOwnerModule] Error posting Quick Ride:', error);
             _domElements.formMessage.textContent = `Error: ${error.message || 'Could not post ride.'}`;
-            _domElements.formMessage.className = 'quickride-form-message ml-4 text-sm text-red-700 border border-red-300 bg-red-50 p-2 rounded-md'; // Themed error
+            _domElements.formMessage.className = 'quickride-form-message ml-4 text-sm text-red-700 border border-red-300 bg-red-50 p-2 rounded-md';
         } finally {
             _domElements.submitQuickRideBtn.disabled = false;
             _domElements.submitQuickRideBtn.textContent = 'Post Ride';
@@ -305,7 +319,7 @@
 
         if (_domElements.formMessage) {
             _domElements.formMessage.textContent = 'Cancelling ride...';
-            _domElements.formMessage.className = 'quickride-form-message ml-4 text-sm text-stone-600'; // Themed processing
+            _domElements.formMessage.className = 'quickride-form-message ml-4 text-sm text-stone-600'; 
         }
 
         try {
@@ -315,7 +329,7 @@
 
             if (_domElements.formMessage) {
                 _domElements.formMessage.textContent = 'Ride cancelled successfully.';
-                _domElements.formMessage.className = 'quickride-form-message ml-4 text-sm text-emerald-700 border border-emerald-300 bg-emerald-50 p-2 rounded-md'; // Themed success
+                _domElements.formMessage.className = 'quickride-form-message ml-4 text-sm text-emerald-700 border border-emerald-300 bg-emerald-50 p-2 rounded-md';
             }
             fetchMyRides();
 
@@ -329,7 +343,7 @@
             console.error('[QuickRideOwnerModule] Error cancelling ride:', error);
             if (_domElements.formMessage) {
                 _domElements.formMessage.textContent = `Error cancelling ride: ${error.message}`;
-                _domElements.formMessage.className = 'quickride-form-message ml-4 text-sm text-red-700 border border-red-300 bg-red-50 p-2 rounded-md'; // Themed error
+                _domElements.formMessage.className = 'quickride-form-message ml-4 text-sm text-red-700 border border-red-300 bg-red-50 p-2 rounded-md';
             }
              if(cancelButton) cancelButton.disabled = false;
         }
@@ -350,7 +364,7 @@
         if (App.ProfileModal && App.ProfileModal.show) {
             App.ProfileModal.show(walkerId, 'walker', walkerName, null);
         } else {
-            console.error("[QuickRideOwnerModule] App.ProfileModal.show function not found. Cannot display walker profile.");
+            console.error("[QuickRideOwnerModule] App.ProfileModal.show function not found.");
             alert("Profile viewing feature is temporarily unavailable.");
         }
     }
@@ -363,16 +377,26 @@
             _domElements.newRideForm.reset();
 
             const now = new Date();
-            now.setMinutes(now.getMinutes() + 15); // Default to 15 mins in future
-            const year = now.getFullYear();
-            const month = (now.getMonth() + 1).toString().padStart(2, '0');
-            const day = now.getDate().toString().padStart(2, '0');
-            const hours = now.getHours().toString().padStart(2, '0');
-            const minutes = Math.ceil(now.getMinutes() / 15) * 15 % 60; // Snap to nearest 15 min interval
+            const fifteenMinutesLater = new Date(now.getTime() + 15 * 60000); // Add 15 minutes
+
+            const year = fifteenMinutesLater.getFullYear();
+            const month = (fifteenMinutesLater.getMonth() + 1).toString().padStart(2, '0');
+            const day = fifteenMinutesLater.getDate().toString().padStart(2, '0');
+            const hours = fifteenMinutesLater.getHours().toString().padStart(2, '0');
+            
+            // Snap to the next 15-minute interval for minutes
+            let minutes = fifteenMinutesLater.getMinutes();
+            if (minutes > 0 && minutes < 15) minutes = 15;
+            else if (minutes > 15 && minutes < 30) minutes = 30;
+            else if (minutes > 30 && minutes < 45) minutes = 45;
+            else if (minutes > 45) minutes = 0; // This might roll over to next hour, handle if necessary (though datetime-local usually manages this)
+            
             const adjustedMinutes = minutes.toString().padStart(2, '0');
             
-            _domElements.dateTimeInput.min = `${year}-${month}-${day}T${hours}:${adjustedMinutes}`;
-            _domElements.dateTimeInput.value = `${year}-${month}-${day}T${hours}:${adjustedMinutes}`;
+            // Set min attribute for the datetime-local input to prevent past dates/times
+            const minDateTime = `${year}-${month}-${day}T${hours}:${adjustedMinutes}`;
+             _domElements.dateTimeInput.min = minDateTime;
+            _domElements.dateTimeInput.value = minDateTime;
 
 
             if(_ownerDogs.length === 0 && _domElements.dogSelect) {
@@ -426,7 +450,7 @@
 
             fetchOwnerDogs().then(() => {
                 populateDogSelect();
-                if (_domElements.newRideForm.classList.contains('hidden') === false) {
+                if (_domElements.newRideForm.classList.contains('hidden') === false) { // Re-check if form is visible after dogs loaded
                     if(_ownerDogs.length === 0 && _domElements.dogSelect) {
                         if (_domElements.submitQuickRideBtn) _domElements.submitQuickRideBtn.disabled = true;
                     } else if (_domElements.dogSelect) {
