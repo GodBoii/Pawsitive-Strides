@@ -1,8 +1,11 @@
-Okay, here is a consolidated SQL script that defines the current state of your Pawsitive Strides database schema in Supabase, based on our discussion. This script includes table definitions, RLS policies, the `handle_new_user` trigger, the `find_nearby_users` function, and all the enhanced profile fields for pet owners and dog walkers, plus the latest Quick Ride RPC enhancements.
+Okay, here is a consolidated SQL script that defines the current state of your Pawsitive Strides database schema in Supabase, based on our discussion. This script includes table definitions, RLS policies, the `handle_new_user` trigger, the `find_nearby_users` function, all the enhanced profile fields for pet owners and dog walkers, the latest Quick Ride RPC enhancements, and the new `payments` table for Razorpay integration.
 
-# Recent Updates (Enhanced User Profiles & Quick Rides V6 - [Current Date])
+# Recent Updates (Payment Integration, Enhanced User Profiles & Quick Rides V7 - [Current Date])
 
-The schema has been enhanced to support more comprehensive user profiles and a robust "Quick Ride" feature.
+The schema has been enhanced to support:
+- **Razorpay Payment Integration**: A new `payments` table has been added to track subscription payments. The `profiles` table's `subscription_status` and `plan` fields are updated upon successful payment.
+- **Comprehensive User Profiles**: More detailed fields for both pet owners and dog walkers.
+- **Robust "Quick Ride" Feature**: On-demand walking jobs with refined RPC functions.
 
 ## Pet Owner Enhancements:
 - `emergency_contact_name`: Optional emergency contact person
@@ -28,13 +31,19 @@ The schema has been enhanced to support more comprehensive user profiles and a r
     - `cancel_quick_ride_owner`: For pet owners to cancel their pending rides.
     - **`complete_quick_ride_walker`**: **New** function for walkers to mark an accepted ride as completed.
 
+## Payment Integration:
+- `payments` table: Stores records of payment attempts and successful transactions via Razorpay.
+- RLS Policies for `payments`.
+- `profiles.subscription_status` updated to 'active' by backend upon successful payment.
+- `profiles.plan` updated by backend (or trigger) based on selected plan.
+
 SQL for all features is included in the full schema below.
 
-You can save this as a .sql file (e.g., `pawsitive_strides_schema_v6.sql`) to share with others or use as a reference. It's designed to be re-runnable (it drops objects before recreating them).
+You can save this as a .sql file (e.g., `pawsitive_strides_schema_v7.sql`) to share with others or use as a reference. It's designed to be re-runnable (it drops objects before recreating them).
 
 -- ======================================================================
 -- Pawsitive Strides - Supabase Database Schema Setup Script
--- Version: 6 (Quick Ride RPCs refined for time-based validity)
+-- Version: 7 (Payment Integration, Quick Ride RPCs refined)
 --
 -- Purpose: Defines the necessary tables, RLS policies, trigger function,
 --          RPC functions, and trigger for the Pawsitive Strides application.
@@ -62,18 +71,17 @@ DROP FUNCTION IF EXISTS public.create_quick_ride(uuid, timestamp with time zone,
 DROP FUNCTION IF EXISTS public.get_available_quick_rides(double precision);
 DROP FUNCTION IF EXISTS public.accept_quick_ride(uuid);
 DROP FUNCTION IF EXISTS public.cancel_quick_ride_owner(uuid);
-DROP FUNCTION IF EXISTS public.complete_quick_ride_walker(uuid); -- NEW: ensure it's dropped
+DROP FUNCTION IF EXISTS public.complete_quick_ride_walker(uuid);
 
--- 2. Drop quick_rides table (depends on profiles, dogs, quick_ride_status type)
+-- 2. Drop tables that depend on profiles or auth.users
 DROP TABLE IF EXISTS public.quick_rides CASCADE;
-
--- 3. Drop dogs table (depends on profiles)
+DROP TABLE IF EXISTS public.payments CASCADE; -- NEW: Added payments table
 DROP TABLE IF EXISTS public.dogs CASCADE;
 
--- 4. Drop profiles table (depends on auth.users)
+-- 3. Drop profiles table (depends on auth.users)
 DROP TABLE IF EXISTS public.profiles CASCADE;
 
--- 5. Drop ENUM types (if not dropped by CASCADE with quick_rides)
+-- 4. Drop ENUM types (if not dropped by CASCADE)
 DROP TYPE IF EXISTS public.quick_ride_status;
 
 -- === Create ENUM Types ===
@@ -82,7 +90,7 @@ CREATE TYPE public.quick_ride_status AS ENUM (
     'accepted',
     'completed',
     'cancelled_by_owner',
-    'cancelled_by_walker' -- Retained for schema completeness, though not actively used by new RPCs
+    'cancelled_by_walker'
 );
 
 -- === Create Tables ===
@@ -94,7 +102,7 @@ CREATE TABLE public.profiles (
   mobile text UNIQUE,
   address text,
   role text CHECK (role IN ('owner', 'walker')),
-  plan text,
+  plan text, -- Stores the selected plan like 'owner_monthly', 'walker_monthly'
   age integer,
   latitude double precision,
   longitude double precision,
@@ -113,6 +121,8 @@ CREATE TABLE public.profiles (
   CONSTRAINT fk_auth_user FOREIGN KEY(id) REFERENCES auth.users(id) ON DELETE CASCADE
 );
 COMMENT ON TABLE public.profiles IS 'Stores public profile information linked to authenticated users.';
+COMMENT ON COLUMN public.profiles.plan IS 'The subscription plan selected by the user (e.g., owner_monthly, walker_monthly).';
+COMMENT ON COLUMN public.profiles.subscription_status IS 'Current status of the user''s subscription.';
 COMMENT ON COLUMN public.profiles.emergency_contact_name IS 'Name of emergency contact for dog owners';
 COMMENT ON COLUMN public.profiles.emergency_contact_phone IS 'Phone number of emergency contact for dog owners';
 COMMENT ON COLUMN public.profiles.preferred_communication IS 'User preference for notifications and contact method';
@@ -140,7 +150,7 @@ CREATE TABLE public.dogs (
   preferred_route text,
   created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
   updated_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
-  CONSTRAINT fk_owner FOREIGN KEY(owner_id) REFERENCES auth.users(id) ON DELETE CASCADE
+  CONSTRAINT fk_dog_owner FOREIGN KEY(owner_id) REFERENCES auth.users(id) ON DELETE CASCADE -- Changed constraint name for clarity
 );
 COMMENT ON TABLE public.dogs IS 'Stores details about dogs belonging to users.';
 
@@ -165,10 +175,37 @@ COMMENT ON COLUMN public.quick_rides.owner_longitude IS 'Snapshot of owner''s lo
 COMMENT ON COLUMN public.quick_rides.status IS 'Current status of the quick ride.';
 COMMENT ON COLUMN public.quick_rides.accepted_walker_id IS 'The walker who accepted this ride.';
 
+-- NEW: Create the payments table
+CREATE TABLE public.payments (
+    id uuid DEFAULT gen_random_uuid() NOT NULL PRIMARY KEY,
+    user_id uuid NOT NULL,
+    profile_id uuid,
+    razorpay_order_id text NOT NULL UNIQUE,
+    razorpay_payment_id text UNIQUE,
+    razorpay_signature text,
+    amount numeric(10, 2) NOT NULL,
+    currency char(3) NOT NULL DEFAULT 'INR',
+    status text NOT NULL,
+    plan_name text,
+    payment_method jsonb,
+    error_details jsonb,
+    created_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at timestamp with time zone DEFAULT timezone('utc'::text, now()) NOT NULL,
+    CONSTRAINT fk_payment_user FOREIGN KEY(user_id) REFERENCES auth.users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_payment_profile FOREIGN KEY(profile_id) REFERENCES public.profiles(id) ON DELETE SET NULL
+);
+COMMENT ON TABLE public.payments IS 'Stores records of payment attempts and successful transactions for subscriptions.';
+COMMENT ON COLUMN public.payments.status IS 'Status of the payment (e.g., order_created, paid, failed, verification_failed, paid_db_profile_update_failed).';
+COMMENT ON COLUMN public.payments.plan_name IS 'The subscription plan associated with this payment (e.g., owner_monthly).';
+COMMENT ON COLUMN public.payments.payment_method IS 'Details about the payment method used (e.g., card, upi), captured from Razorpay if needed.';
+COMMENT ON COLUMN public.payments.error_details IS 'Stores error information from Razorpay or internal processing if payment/verification fails.';
+
+
 -- === Enable Row Level Security (RLS) ===
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.dogs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.quick_rides ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.payments ENABLE ROW LEVEL SECURITY; -- NEW
 
 -- === Define RLS Policies ===
 
@@ -179,6 +216,9 @@ CREATE POLICY "CRUD own profile" ON public.profiles
 CREATE POLICY "Allow authenticated users to view profiles" ON public.profiles
   FOR SELECT
   USING (auth.role() = 'authenticated');
+-- Service role has access via GRANT ALL, but explicit policy can be added if needed:
+-- CREATE POLICY "Allow service_role to manage profiles" ON public.profiles
+--   FOR ALL USING (auth.role() = 'service_role') WITH CHECK (auth.role() = 'service_role');
 
 -- RLS Policies for dogs table
 CREATE POLICY "CRUD own dogs" ON public.dogs
@@ -201,7 +241,6 @@ USING (
     auth.uid() = owner_id AND
     (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'owner'
 );
-
 CREATE POLICY "Pet owners can update their own pending quick rides for cancellation"
 ON public.quick_rides FOR UPDATE
 TO authenticated
@@ -212,7 +251,6 @@ USING (
 WITH CHECK (
     status = 'pending_acceptance'
 );
-
 CREATE POLICY "Dog walkers can view pending quick rides"
 ON public.quick_rides FOR SELECT
 TO authenticated
@@ -220,7 +258,6 @@ USING (
     (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'walker' AND
     status = 'pending_acceptance'
 );
-
 CREATE POLICY "Dog walkers can view their accepted quick rides"
 ON public.quick_rides FOR SELECT
 TO authenticated
@@ -228,8 +265,6 @@ USING (
     auth.uid() = accepted_walker_id AND
     (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'walker'
 );
-
--- Policy for walkers to update rides they accepted (specifically for completion via RPC)
 CREATE POLICY "Walkers can update rides they accepted"
 ON public.quick_rides FOR UPDATE
 TO authenticated
@@ -238,9 +273,20 @@ USING (
     (SELECT role FROM public.profiles WHERE id = auth.uid()) = 'walker'
 )
 WITH CHECK (
-    status = 'accepted' -- Can only update if it's currently 'accepted' (to move to 'completed')
+    status = 'accepted'
 );
 
+-- NEW: RLS Policies for payments table
+CREATE POLICY "Users can view their own payments"
+    ON public.payments FOR SELECT
+    TO authenticated
+    USING (auth.uid() = user_id);
+
+CREATE POLICY "Service role can manage all payments"
+    ON public.payments FOR ALL
+    USING (auth.role() = 'service_role')
+    WITH CHECK (auth.role() = 'service_role');
+-- Note: Authenticated users do not directly insert into payments; the backend service_role does.
 
 -- === Define Functions ===
 
@@ -261,7 +307,7 @@ BEGIN
       meta_mobile    := new.raw_user_meta_data ->> 'mobile';
       meta_address   := new.raw_user_meta_data ->> 'address';
       meta_role      := new.raw_user_meta_data ->> 'user_role';
-      meta_plan      := new.raw_user_meta_data ->> 'selected_plan';
+      meta_plan      := new.raw_user_meta_data ->> 'selected_plan'; -- This sets the plan initially
       meta_age       := new.raw_user_meta_data ->> 'age';
 
       profile_age := NULL;
@@ -273,14 +319,14 @@ BEGIN
           END IF;
       END IF;
 
-      INSERT INTO public.profiles (id, full_name, mobile, address, role, plan, age, latitude, longitude)
-      VALUES ( new.id, meta_full_name, meta_mobile, meta_address, meta_role, meta_plan, profile_age, NULL, NULL );
+      INSERT INTO public.profiles (id, full_name, mobile, address, role, plan, age, latitude, longitude, subscription_status)
+      VALUES ( new.id, meta_full_name, meta_mobile, meta_address, meta_role, meta_plan, profile_age, NULL, NULL, 'pending_payment' );
   END IF;
   RETURN new;
 END;
 $$;
 
--- RPC function to find nearby users
+-- RPC function to find nearby users (no changes)
 CREATE OR REPLACE FUNCTION public.find_nearby_users(
     user_lat double precision,
     user_lng double precision,
@@ -331,7 +377,7 @@ BEGIN
 END;
 $$;
 
--- RPC function for Pet Owners to create a quick ride
+-- RPC function for Pet Owners to create a quick ride (no changes)
 CREATE OR REPLACE FUNCTION public.create_quick_ride(
     p_dog_id uuid,
     p_walk_datetime timestamp with time zone,
@@ -385,7 +431,7 @@ BEGIN
 END;
 $$;
 
--- RPC function for Dog Walkers to get available quick rides (Updated to filter past rides)
+-- RPC function for Dog Walkers to get available quick rides (no changes)
 CREATE OR REPLACE FUNCTION public.get_available_quick_rides(
     p_search_radius_km double precision DEFAULT 50.0
 )
@@ -445,7 +491,7 @@ BEGIN
     JOIN public.dogs d ON qr.dog_id = d.id
     WHERE
         qr.status = 'pending_acceptance'
-        AND qr.walk_datetime > now() -- Ensures only future rides are fetched
+        AND qr.walk_datetime > now() 
         AND qr.owner_id <> current_walker_id 
         AND (
             earth_radius_km * 2 * asin(sqrt(
@@ -460,7 +506,7 @@ BEGIN
 END;
 $$;
 
--- RPC function for Dog Walkers to accept a quick ride (Updated with time check)
+-- RPC function for Dog Walkers to accept a quick ride (no changes)
 CREATE OR REPLACE FUNCTION public.accept_quick_ride(
     p_ride_id uuid
 )
@@ -512,7 +558,7 @@ BEGIN
 END;
 $$;
 
--- RPC function for Pet Owners to cancel their quick ride
+-- RPC function for Pet Owners to cancel their quick ride (no changes)
 CREATE OR REPLACE FUNCTION public.cancel_quick_ride_owner(p_ride_id uuid)
 RETURNS public.quick_rides 
 LANGUAGE plpgsql
@@ -559,7 +605,7 @@ BEGIN
 END;
 $$;
 
--- NEW RPC function for Dog Walkers to mark a Quick Ride as completed
+-- RPC function for Dog Walkers to mark a Quick Ride as completed (no changes)
 CREATE OR REPLACE FUNCTION public.complete_quick_ride_walker(
     p_ride_id uuid
 )
@@ -621,16 +667,23 @@ GRANT usage ON SCHEMA public TO postgres, anon, authenticated, service_role, sup
 
 GRANT ALL ON TABLE public.profiles TO authenticated;
 GRANT ALL ON TABLE public.dogs TO authenticated;
-GRANT ALL ON TABLE public.quick_rides TO authenticated; 
+GRANT ALL ON TABLE public.quick_rides TO authenticated;
+GRANT ALL ON TABLE public.payments TO authenticated; -- NEW: Grant to authenticated for RLS to apply for SELECT
+
 GRANT ALL ON TABLE public.profiles TO service_role;
 GRANT ALL ON TABLE public.dogs TO service_role;
 GRANT ALL ON TABLE public.quick_rides TO service_role;
+GRANT ALL ON TABLE public.payments TO service_role; -- NEW
+
 GRANT ALL ON TABLE public.profiles TO postgres;
 GRANT ALL ON TABLE public.dogs TO postgres;
 GRANT ALL ON TABLE public.quick_rides TO postgres;
+GRANT ALL ON TABLE public.payments TO postgres; -- NEW
+
 GRANT ALL ON TABLE public.profiles TO supabase_auth_admin;
 GRANT ALL ON TABLE public.dogs TO supabase_auth_admin;
 GRANT ALL ON TABLE public.quick_rides TO supabase_auth_admin;
+GRANT ALL ON TABLE public.payments TO supabase_auth_admin; -- NEW
 
 GRANT EXECUTE ON FUNCTION public.handle_new_user() TO supabase_auth_admin;
 GRANT EXECUTE ON FUNCTION public.handle_new_user() TO postgres;
@@ -644,10 +697,13 @@ GRANT EXECUTE ON FUNCTION public.accept_quick_ride(uuid) TO authenticated;
 GRANT EXECUTE ON FUNCTION public.accept_quick_ride(uuid) TO postgres;
 GRANT EXECUTE ON FUNCTION public.cancel_quick_ride_owner(uuid) TO authenticated; 
 GRANT EXECUTE ON FUNCTION public.cancel_quick_ride_owner(uuid) TO postgres; 
-GRANT EXECUTE ON FUNCTION public.complete_quick_ride_walker(uuid) TO authenticated; -- NEW
-GRANT EXECUTE ON FUNCTION public.complete_quick_ride_walker(uuid) TO postgres; -- NEW
+GRANT EXECUTE ON FUNCTION public.complete_quick_ride_walker(uuid) TO authenticated; 
+GRANT EXECUTE ON FUNCTION public.complete_quick_ride_walker(uuid) TO postgres; 
 
 -- === Set default privileges ===
+-- These ensure that new tables/functions created by `postgres` or `service_role`
+-- (or the current user if they have creation rights)
+-- automatically get these base permissions for `authenticated` and `anon` roles.
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO authenticated;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO authenticated;
 ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON FUNCTIONS TO authenticated;
@@ -656,12 +712,14 @@ ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT USAGE ON SEQUENCES TO anon;
 
 -- === Add Indexes ===
 -- Indexes for profiles and dogs are implicitly created for PRIMARY KEY and UNIQUE constraints.
--- Add other necessary indexes:
 
 -- Indexes for quick_rides table
 CREATE INDEX IF NOT EXISTS idx_quick_rides_status ON public.quick_rides(status);
 CREATE INDEX IF NOT EXISTS idx_quick_rides_owner_id ON public.quick_rides(owner_id);
 CREATE INDEX IF NOT EXISTS idx_quick_rides_accepted_walker_id ON public.quick_rides(accepted_walker_id);
 CREATE INDEX IF NOT EXISTS idx_quick_rides_walk_datetime ON public.quick_rides(walk_datetime);
--- Note: A geospatial index on (owner_latitude, owner_longitude) would be beneficial if using PostGIS.
--- For now, the individual column indexes might offer some benefit.
+
+-- NEW: Indexes for payments table
+CREATE INDEX IF NOT EXISTS idx_payments_user_id ON public.payments(user_id);
+CREATE INDEX IF NOT EXISTS idx_payments_razorpay_order_id ON public.payments(razorpay_order_id);
+CREATE INDEX IF NOT EXISTS idx_payments_status ON public.payments(status);

@@ -1,5 +1,32 @@
 {
   "devDependencies": {
     "supabase": "^2.22.6"
-  }
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.4",
+    "body-parser": "^2.2.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "razorpay": "^2.9.6"
+  },
+  "name": "pawsitive-strides-2",
+  "version": "1.0.0",
+  "description": "Pawsitive Strides is a two-sided web platform designed to connect pet owners in India with verified, local dog walkers. It provides a convenient, safe, and reliable solution for scheduling and managing dog walking services.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/GodBoii/Pawsitive-Strides.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/GodBoii/Pawsitive-Strides/issues"
+  },
+  "homepage": "https://github.com/GodBoii/Pawsitive-Strides#readme"
 }
