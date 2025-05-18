@@ -118,3 +118,12 @@ Contributions are welcome! Please follow standard Git workflow (fork, branch, pu
 ## 8. License
 
 (Specify your license, e.g., MIT License)
+
+## Vercel Environment Variables for Razorpay
+
+1. Go to your project on [Vercel Dashboard](https://vercel.com/dashboard).
+2. Navigate to **Settings > Environment Variables**.
+3. Add the following variables:
+   - `RAZORPAY_KEY_ID` (your Razorpay API key ID)
+   - `RAZORPAY_KEY_SECRET` (your Razorpay API key secret)
+4. Redeploy your project after saving changes.

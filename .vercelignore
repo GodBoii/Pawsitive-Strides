@@ -1,0 +1,9 @@
+node_modules/
+src/
+supabase/
+*.md
+*.log
+.env
+.git/
+.gitignore
+package-lock.json 

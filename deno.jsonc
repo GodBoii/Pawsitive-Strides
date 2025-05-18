@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    "allowJs": true,
+    "strict": true
+  },
+  "lint": {
+    "files": {
+      "include": ["supabase/functions/"]
+    }
+  },
+  "fmt": {
+    "files": {
+      "include": ["supabase/functions/"]
+    }
+  },
+  "importMap": "./supabase/functions/import_map.json",
+  "tasks": {
+    "supabase:functions": "supabase functions serve"
+  }
+} 

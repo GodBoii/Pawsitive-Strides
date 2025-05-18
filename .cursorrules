@@ -1,0 +1,210 @@
+Project: Pawsitive Strides - Dog Walking Platform (India)
+
+1. Project Overview and Goals:
+
+Purpose: Pawsitive Strides is a two-sided platform connecting pet owners in India with verified dog walkers. The platform aims to provide a safe, convenient, and reliable solution for dog walking services.
+
+Target Audience:
+
+Pet Owners: Busy individuals or families who need assistance with walking their dogs.
+
+Dog Walkers: Individuals seeking flexible, part-time income opportunities walking dogs.
+
+Key Goals:
+
+Build a user-friendly and trustworthy platform.
+
+Facilitate secure and convenient booking and payment.
+
+Ensure the safety and well-being of dogs and walkers.
+
+Create a scalable platform for future growth.
+
+Focus initially on the Indian market.
+
+2. User Flows:
+
+Unified Entry Point (Website - Responsive for Mobile and Desktop):
+
+Landing page with clear value proposition and two primary calls to action: "Find a Dog Walker" and "Become a Dog Walker".
+
+Trust signals (verification badges, testimonials, "How It Works" section).
+
+Pet Owner Flow:
+
+Find a Dog Walker -> Subscription Selection: User selects a subscription plan (Monthly: ₹199, Annual: ₹499) and clicks "Get Started."
+
+Registration:
+
+Name, Email, Mobile Number (with OTP verification), Password.
+
+Location: Manual address input (with Google Places Autocomplete) and a map-based location selector (Google Maps).
+
+Age (optional)
+
+Payment: Secure payment processing via an integrated Indian payment gateway (Razorpay preferred, but alternatives like PayU are acceptable). Support UPI, wallets (Paytm, PhonePe, Google Pay), net banking, and credit/debit cards.
+
+Post-Payment Profile Completion:
+
+Add Dog Profile(s): Separate profiles for each dog, including:
+
+Name, Breed (dropdown + "Other"), Age, Gender, Weight, Photo Upload (multiple), Temperament (checkboxes), Special Needs/Medical Conditions, Vaccination Records (upload - prominent), Veterinarian Contact (optional), Preferred Walking Route (text + map option), Other Information.
+
+Dashboard: Edit Profile, Manage Subscription, View Booking History, Messages, "Find a Walker" button.
+
+Finding a Walker:
+
+Search interface with default search radius (5km).
+
+Filters: Distance (slider), Availability (date picker, time slots, recurring walks), Walker Experience, Price Range.
+
+Results: Walker profiles as cards (picture, name, experience, rating, distance, price, short bio, "View Profile" button).
+
+Detailed Walker Profile: Full walker information, reviews/ratings, map (general location), "Send Request" button.
+
+Dog Walker Flow:
+
+Become a Dog Walker -> Subscription Selection: User selects the ₹19/month subscription plan and clicks "Get Started."
+
+Registration:
+
+Name, Email, Mobile Number (with OTP verification), Password.
+
+Location: Identical to Pet Owner (manual + map).
+
+Age (minimum 18).
+
+Experience with Dogs (dropdown), short paragraph describing experience.
+
+Availability: General availability (days/time ranges), Preferred Walking Areas (radius).
+
+Pricing: Set own rate (per hour/walk) with guidance.
+
+Profile Picture (required).
+
+About Me (short bio).
+
+Background Verification Information: Fields for data needed for a background check (Aadhaar Number with consent, Address Proof upload, ID Proof upload). Integration with a background check service API is required.
+
+Mode of payment: Bank account details
+
+Payment: Same as Pet Owner flow.
+
+Post Payment Dashboard: Edit Profile, manage Subscription, Booking History, Messages.
+
+Job Search:
+
+"Find Jobs" section.
+
+Default view: Requests within radius and availability.
+
+Filters: Distance, Date/Time, Pay.
+
+Listings: Time, Duration, Pay, Distance, Dog's Name (excerpt), "View Details."
+
+Job Details: Full request information, dog's profile, map (precise location), "Send Request" button.
+
+Sending a Request: Sends notification (push + in-app) to Pet Owner. Confirmation of mode of payment.
+
+Accept/Reject Request (Pet Owner Side): Pet Owner receives notification, can view walker's profile, and accept or reject the request.
+
+3. Features:
+
+Responsive Design: Website must be fully functional and visually appealing on all screen sizes (desktops, tablets, smartphones).
+
+User Authentication: Secure login and registration with password management (including "Forgot Password" functionality).
+
+OTP Verification: Mobile number verification via OTP for both user types.
+
+Location Services:
+
+Google Places Autocomplete for address input.
+
+Google Maps integration for precise location selection (draggable marker).
+
+Distance calculation between pet owners and walkers.
+
+Payment Gateway Integration: Razorpay (preferred) or PayU, supporting multiple payment methods (UPI, wallets, net banking, cards).
+
+Subscription Management: Recurring billing for both user types. Ability for users to manage (upgrade, downgrade, cancel) their subscriptions.
+
+Dog Profiles: Detailed profiles for each dog, with image uploads.
+
+Walker Profiles: Detailed profiles with experience, availability, pricing, and background verification status ("Verified" badge).
+
+Booking System: Calendar-based booking with flexible time slots and recurring walk options.
+
+Real-Time Notifications: Push notifications (via Firebase Cloud Messaging or similar) and in-app messages for booking requests, confirmations, cancellations, etc.
+
+Search and Filtering: Robust search and filtering options for both pet owners and walkers.
+
+Reviews and Ratings: A system for pet owners to rate and review walkers.
+
+Admin Panel: A backend dashboard for managing users, bookings, payments, content, and disputes.
+
+Background Verification: Integration with a third-party Indian background verification service API.
+
+Messaging: A messaging option for both users to communicate.
+
+4. Technical Specifications:
+
+Frontend: React, Angular, or Vue.js (developer's choice, but must be justified). use methods / languages which needs less lines of code and is more efficient. and easy to understand and learn. 
+
+Backend: Node.js with Express.js, Python with Django/Flask, or Ruby on Rails (developer's choice, but must be justified). RESTful API design. use methods / languages which needs less lines of code and is more efficient. and easy to understand and learn. 
+
+Database: PostgreSQL (preferred) or MySQL. use methods / languages which needs less lines of code and is more efficient. and easy to understand and learn. 
+
+Cloud Hosting: DigitalOcean (preferred for initial deployment), with the option to migrate to AWS or GCP later. 
+
+Mapping: Google Maps API.
+
+Payment Gateway: Razorpay (preferred) or PayU.
+
+Push Notifications: Firebase Cloud Messaging (FCM) or similar.
+
+Real-time Communication: WebSockets (Socket.IO or similar) for real-time updates (future consideration, not required for initial launch).
+
+Background Checks: Integration with a reputable Indian background verification service API (developer to research and propose options).
+
+Security:
+
+HTTPS for all communication.
+
+Secure storage of passwords (hashing and salting).
+
+Protection against common web vulnerabilities (XSS, SQL injection, CSRF).
+
+Regular security audits.
+
+Code Quality:
+use methods / languages which needs less lines of code and is more efficient. and easy to understand and learn. 
+
+Clean, well-documented code.
+
+Use of version control (Git).
+
+Follow best practices for code style and organization.
+
+5. Development Process:
+
+Documentation: Clear documentation of the codebase, API, and deployment process. (README.md)
+
+6. Deliverables:
+
+Fully functional website (frontend and backend).
+
+Admin panel.
+
+Source code (hosted on a Git repository).
+
+Documentation.
+
+Integration with all required third-party services (payment gateway, mapping, background checks, push notifications).
+
+7. Communication:
+
+Establish clear communication channels (e.g., Slack, email).
+
+Provide a single point of contact for the project.
+
+This detailed prompt gives the llm a comprehensive understanding of the project requirements.
