@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800">
+  <!-- Main pad -->
+  <path d="M450 550 C520 650, 350 750, 250 550 C150 350, 280 380, 450 550" 
+        fill="none" 
+        stroke="#D0D0D0" 
+        stroke-width="8" 
+        stroke-linecap="round"
+        stroke-opacity="0.15"/>
+  
+  <!-- Toe pad 1 -->
+  <path d="M280 250 C320 220, 370 290, 330 370 C290 450, 200 400, 280 250" 
+        fill="none" 
+        stroke="#D0D0D0" 
+        stroke-width="6" 
+        stroke-linecap="round"
+        stroke-opacity="0.12"/>
+  
+  <!-- Toe pad 2 -->
+  <path d="M370 200 C420 180, 470 240, 450 320 C430 400, 340 380, 370 200" 
+        fill="none" 
+        stroke="#D0D0D0" 
+        stroke-width="6" 
+        stroke-linecap="round"
+        stroke-opacity="0.12"/>
+  
+  <!-- Toe pad 3 -->
+  <path d="M480 220 C530 200, 570 260, 550 340 C530 420, 440 400, 480 220" 
+        fill="none" 
+        stroke="#D0D0D0" 
+        stroke-width="6" 
+        stroke-linecap="round"
+        stroke-opacity="0.12"/>
+  
+  <!-- Toe pad 4 -->
+  <path d="M570 290 C610 260, 650 320, 610 400 C570 480, 490 440, 570 290" 
+        fill="none" 
+        stroke="#D0D0D0" 
+        stroke-width="6" 
+        stroke-linecap="round"
+        stroke-opacity="0.12"/>
+  
+  <!-- Subtle flow lines -->
+  <path d="M350 350 C380 400, 420 430, 450 480" 
+        fill="none" 
+        stroke="#D0D0D0" 
+        stroke-width="3" 
+        stroke-linecap="round"
+        stroke-opacity="0.08"/>
+  
+  <path d="M430 330 C460 380, 480 420, 490 460" 
+        fill="none" 
+        stroke="#D0D0D0" 
+        stroke-width="3" 
+        stroke-linecap="round"
+        stroke-opacity="0.08"/>
+  
+  <path d="M500 340 C520 390, 530 420, 530 450" 
+        fill="none" 
+        stroke="#D0D0D0" 
+        stroke-width="3" 
+        stroke-linecap="round"
+        stroke-opacity="0.08"/>
+</svg>
