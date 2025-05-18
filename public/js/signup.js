@@ -1,6 +1,5 @@
 // D:\Pawsitive Strides 2\src\js\signup.js
 // Signup functionality for Pawsitive Strides (Trigger-based profile + Razorpay Payment)
-const backendBaseUrl = 'http://192.168.1.2:3000';
 
 document.addEventListener('DOMContentLoaded', () => {
     // Initializing Supabase client
@@ -140,13 +139,13 @@ document.addEventListener('DOMContentLoaded', () => {
             // Step 2: Create Razorpay Order by calling your backend
             signupBtn.textContent = 'Preparing Payment...';
             console.log('Calling backend to create Razorpay order...');
-            const orderResponse = await fetch(`${backendBaseUrl}/create-razorpay-order`, {
+            const orderResponse = await fetch('/api/create-razorpay-order', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     amount: amountInPrimaryUnit, // Send amount in primary unit (e.g., 199)
                     currency: 'INR',
-                    receipt: `ps_ord_${Date.now()}`, // "ps" for Pawsitive Strides, "ord" for order
+                    receipt: `ps_ord_${Date.now()}`,
                     notes: {
                         userId: authResultData.user.id,
                         email: emailInput.value.trim(),
@@ -182,7 +181,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     console.log("Razorpay payment successful:", response);
                     try {
                         console.log('Calling backend to verify Razorpay payment...');
-                        const verificationRes = await fetch(`${backendBaseUrl}/verify-razorpay-payment`, {
+                        const verificationRes = await fetch('/api/verify-razorpay-payment', {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
