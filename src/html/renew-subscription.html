@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Renew Subscription - Pawsitive Strides</title>
+    <!-- Tailwind CSS v3 (using the Play CDN for JIT benefits) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+          theme: {
+            extend: {
+              fontFamily: {
+                sans: ['Inter', 'sans-serif'],
+                serif: ['Lora', 'serif'],
+              },
+              colors: {
+                emerald: {
+                    50: '#ecfdf5',
+                    100: '#d1fae5',
+                    200: '#a7f3d0',
+                    300: '#6ee7b7',
+                    400: '#34d399',
+                    500: '#10b981',
+                    600: '#059669',
+                    700: '#047857',
+                    800: '#065f46',
+                    900: '#064e3b',
+                },
+                amber: {
+                    50: '#fffbeb',
+                    100: '#fef3c7',
+                    200: '#fde68a',
+                    300: '#fcd34d',
+                    400: '#fbbf24',
+                    500: '#f59e0b',
+                    600: '#d97706',
+                    700: '#b45309',
+                    800: '#92400e',
+                    900: '#78350f',
+                },
+                stone: {
+                    50: '#fafaf9',
+                    100: '#f5f5f4',
+                    200: '#e7e5e4',
+                    300: '#d6d3d1',
+                    400: '#a8a29e',
+                    500: '#78716c',
+                    600: '#57534e',
+                    700: '#44403c',
+                    800: '#292524',
+                    900: '#1c1917',
+                }
+              }
+            }
+          }
+        }
+      </script>
+    <!-- External CSS -->
+    <link rel="stylesheet" href="../css/styles.css">
+    <!-- Supabase JS Library -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <!-- Razorpay Checkout Script -->
+    <script src="https://checkout.razorpay.com/v1/checkout.js"></script>
+    <!-- Common JS and Renewal JS (defer to load after body) -->
+    <script src="../js/common.js" defer></script>
+    <script src="../js/renew-subscription.js" defer></script>
+    <style>
+        .plan-card.selected {
+            /* Highlight selected plan */
+            box-shadow: 0 0 0 3px #10b981; /* emerald-500 */
+            border-color: #10b981;
+        }
+        .animate-spin { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body class="bg-emerald-50 min-h-screen font-sans text-stone-700">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <header class="bg-white py-4 px-6 shadow-lg mb-8 rounded-b-lg">
+            <div class="max-w-7xl mx-auto flex justify-between items-center">
+                <div class="flex items-center">
+                    <a href="index.html" class="flex items-center">
+                        <img src="../../image/logo.svg" alt="Pawsitive Strides" class="w-10 h-10 mr-3">
+                        <span class="text-2xl font-serif font-bold text-emerald-800">Pawsitive Strides</span>
+                    </a>
+                </div>
+                <div>
+                    <a href="login.html" id="back-to-login-link" class="text-stone-700 hover:text-emerald-600 font-medium border border-stone-300 rounded-full px-6 py-2 transition-colors duration-150 hover:border-emerald-500 hover:shadow-sm">
+                        Back to Login
+                    </a>
+                </div>
+            </div>
+        </header>
+
+        <main>
+            <div class="max-w-2xl mx-auto px-4 sm:px-0">
+                <div class="bg-white rounded-2xl shadow-xl overflow-hidden border border-amber-200">
+                    <div class="p-6 sm:p-10">
+                        <div class="text-center mb-6 sm:mb-8">
+                            <div class="w-20 h-20 bg-amber-100 rounded-full flex items-center justify-center mx-auto ring-4 ring-amber-200 shadow-md mb-5">
+                                <svg class="w-10 h-10 text-amber-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M16.023 9.348h4.992v-.001M2.985 19.644v-4.992m0 0h4.992m-4.993 0l3.181 3.183a8.25 8.25 0 0013.803-3.7M4.031 9.865a8.25 8.25 0 0113.803-3.7l3.181 3.182m0-4.991v4.99" />
+                                </svg>
+                            </div>
+                            <h1 class="text-3xl md:text-4xl font-bold font-serif text-stone-800">Renew Your Subscription</h1>
+                            <p id="renewal-page-message" class="text-stone-600 mt-2 text-lg">Your Pawsitive Strides access needs renewal. Choose a plan to continue.</p>
+                            <p id="user-context" class="text-sm text-stone-500 mt-1"></p>
+                        </div>
+
+                        <div id="renewal-error-message" class="hidden p-4 bg-red-100 text-red-800 border border-red-300 rounded-lg text-sm mb-6"></div>
+                        <div id="renewal-success-message" class="hidden p-4 bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-lg text-sm mb-6"></div>
+
+                        <div id="loading-plans" class="text-center py-10">
+                            <div class="inline-block animate-spin rounded-full h-10 w-10 border-t-4 border-b-4 border-emerald-600 mb-4"></div>
+                            <p class="text-stone-600 text-lg font-medium">Loading available plans...</p>
+                        </div>
+
+                        <div id="plans-container" class="space-y-6 hidden">
+                            <!-- Plan cards will be dynamically injected here by renew-subscription.js -->
+                            <!-- Example structure (JS will create these):
+                            <div class="plan-card border border-stone-200 rounded-lg p-6 hover:shadow-lg transition-shadow duration-200 cursor-pointer bg-white"
+                                 data-plan-id="owner_monthly" data-plan-name="Pet Owner - Monthly" data-amount="199" data-role="owner">
+                                <div class="flex justify-between items-center mb-3">
+                                    <h3 class="text-xl font-semibold text-emerald-700">Pet Owner - Monthly</h3>
+                                    <input type="radio" name="selected_plan_radio" value="owner_monthly" class="form-radio h-5 w-5 text-emerald-600 focus:ring-emerald-500 plan-radio">
+                                </div>
+                                <p class="text-3xl font-bold text-stone-800">₹199 <span class="text-base font-normal text-stone-500">/month</span></p>
+                                <ul class="text-sm text-stone-600 list-none mt-3 space-y-1">
+                                    <li class="flex items-start"><svg class="h-4 w-4 text-emerald-500 mr-2 mt-1 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"></path></svg><span>Access to verified walkers</span></li>
+                                </ul>
+                            </div>
+                            -->
+                        </div>
+
+                        <div class="mt-10 text-center hidden" id="payment-section">
+                            <p class="text-stone-600 mb-4 text-lg">You've selected: <strong id="selected-plan-display" class="text-emerald-700 font-semibold"></strong></p>
+                            <button id="proceed-to-payment-btn" class="w-full sm:w-auto py-3.5 px-8 bg-amber-500 text-white font-medium rounded-lg hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 transition-transform duration-200 ease-in-out transform hover:-translate-y-0.5 hover:shadow-lg text-base">
+                                Proceed to Payment
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        <footer class="mt-12 text-center text-stone-500 text-sm py-8">
+            <p>© 2024 Pawsitive Strides. All rights reserved.</p>
+        </footer>
+    </div>
+</body>
+</html>

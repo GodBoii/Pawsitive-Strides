@@ -5,37 +5,66 @@ document.addEventListener('DOMContentLoaded', () => {
     const _supabase = window.pawsitiveCommon.createSupabaseClient();
     console.log('Supabase Initialized (Login Page)');
 
-    // Check if already logged in, if so, redirect based on role
-    // This is a slightly more complex requireNoAuth that also handles role-based redirect if already auth'd
+    // Check if already logged in, if so, redirect based on role and check subscription
     (async () => {
         const user = await window.pawsitiveCommon.checkAuth(_supabase);
         if (user) {
-            console.log('User already logged in, determining role for redirect...');
+            console.log('User already logged in, determining role and subscription for redirect...');
             try {
                 const { data: profile, error: profileError } = await _supabase
                     .from('profiles')
-                    .select('role')
+                    .select('role, subscription_ends_at, plan, subscription_status') // Keep status for context if needed
                     .eq('id', user.id)
                     .single();
 
                 if (profileError || !profile) {
                     console.error('Error fetching profile for already logged-in user:', profileError);
-                    // Fallback, or just let them stay on login page (they can try logging in again)
-                    // or redirect to a generic error page or index.
-                    return; 
+                    return; // Stay on login page or handle error appropriately
                 }
 
+                // **** REVISED EXPIRY/SETUP CHECK FOR ALREADY LOGGED-IN USERS ****
+                if (!profile.subscription_ends_at) {
+                    console.log('User session active, but subscription_ends_at is null. Redirecting to renewal/setup.');
+                    const queryParams = new URLSearchParams({
+                        userId: user.id,
+                        email: user.email,
+                        currentPlan: profile.plan || 'N/A',
+                        role: profile.role,
+                        // Add a flag if it's a setup because subscription_status might be 'pending_payment'
+                        setup: profile.subscription_status === 'pending_payment' ? 'true_pending' : 'true_missing_date'
+                    });
+                    window.location.href = `renew-subscription.html?${queryParams.toString()}`;
+                    return; // Stop further redirection
+                } else {
+                    // subscription_ends_at has a value, check if it's in the past
+                    const subscriptionEndDate = new Date(profile.subscription_ends_at);
+                    const now = new Date();
+                    if (subscriptionEndDate < now) {
+                        console.log('User session active, but subscription expired on:', subscriptionEndDate.toLocaleDateString());
+                        const queryParams = new URLSearchParams({
+                            userId: user.id,
+                            email: user.email,
+                            currentPlan: profile.plan || 'N/A',
+                            role: profile.role,
+                            expired: 'true'
+                        });
+                        window.location.href = `renew-subscription.html?${queryParams.toString()}`;
+                        return; // Stop further redirection
+                    }
+                }
+                // **** END REVISED EXPIRY/SETUP CHECK ****
+
+                // If subscription is valid and date is in the future, proceed to dashboard
                 if (profile.role === 'owner') {
                     window.location.href = 'owner-dashboard.html';
                 } else if (profile.role === 'walker') {
                     window.location.href = 'walker-dashboard.html';
                 } else {
                     console.warn('Unknown role for already logged-in user. Staying on login page.');
-                    // Or redirect to index.html as a safe fallback
-                    // window.location.href = 'index.html'; 
+                    // window.location.href = 'index.html'; // Or a generic dashboard/error page
                 }
             } catch (e) {
-                console.error('Exception while checking auth/role for redirect:', e);
+                console.error('Exception while checking auth/role/subscription for redirect:', e);
             }
         }
     })();
@@ -52,9 +81,10 @@ document.addEventListener('DOMContentLoaded', () => {
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         errorMessage.classList.add('hidden');
-        errorMessage.textContent = ''; 
+        errorMessage.textContent = '';
         loginBtn.textContent = 'Logging in...';
         loginBtn.disabled = true;
+        let loginSuccessfulNoRedirectYet = false;
 
         try {
             const { data: authData, error: authError } = await _supabase.auth.signInWithPassword({
@@ -65,28 +95,62 @@ document.addEventListener('DOMContentLoaded', () => {
             if (authError) throw authError;
 
             console.log('Login authentication successful:', authData);
-            
             const loggedInUser = authData.user;
 
             if (loggedInUser) {
-                // Fetch the user's role from the 'profiles' table
                 const { data: profile, error: profileError } = await _supabase
                     .from('profiles')
-                    .select('role')
+                    .select('role, subscription_ends_at, plan, subscription_status') // Get all relevant fields
                     .eq('id', loggedInUser.id)
                     .single();
 
                 if (profileError || !profile) {
-                    console.error('Error fetching profile role after login:', profileError);
-                    errorMessage.textContent = 'Login successful, but could not load your profile type. Please try again or contact support.';
+                    console.error('Error fetching profile details after login:', profileError);
+                    errorMessage.textContent = 'Login successful, but could not load your profile details. Please try again or contact support.';
                     errorMessage.classList.remove('hidden');
-                    // Optionally sign out, though the user is authenticated. The issue is profile data.
-                    // await _supabase.auth.signOut(); 
-                    // loginBtn.textContent = 'Log In';
-                    // loginBtn.disabled = false;
-                    // return; // Stop here to prevent further redirection attempts
+                    // await _supabase.auth.signOut(); // Optionally sign out
                 } else {
-                    // Redirect based on role
+                    loginSuccessfulNoRedirectYet = true; // Mark success before potential redirect
+
+                    // **** REVISED EXPIRY/SETUP CHECK AFTER LOGIN ATTEMPT ****
+                    if (!profile.subscription_ends_at) {
+                        console.log('Login successful, but subscription_ends_at is null. Redirecting to renewal/setup.');
+                        let setupFlag = 'true_missing_date';
+                        if (profile.subscription_status === 'pending_payment') {
+                             errorMessage.innerHTML = `Your account is created but the initial subscription payment was not completed. Please <a href="renew-subscription.html?userId=${loggedInUser.id}&email=${loggedInUser.email}&role=${profile.role}&setup=true_pending&plan=${profile.plan || 'N/A'}" class="font-medium text-emerald-700 hover:underline">complete your subscription setup</a>.`;
+                             errorMessage.classList.remove('hidden');
+                             setupFlag = 'true_pending';
+                             // No immediate return here, let the redirect below handle it.
+                        }
+                        const queryParams = new URLSearchParams({
+                            userId: loggedInUser.id,
+                            email: loggedInUser.email,
+                            currentPlan: profile.plan || 'N/A',
+                            role: profile.role,
+                            setup: setupFlag
+                        });
+                        window.location.href = `renew-subscription.html?${queryParams.toString()}`;
+                        return; // Stop further execution
+                    } else {
+                        // subscription_ends_at has a value, check if it's in the past
+                        const subscriptionEndDate = new Date(profile.subscription_ends_at);
+                        const now = new Date();
+                        if (subscriptionEndDate < now) {
+                            console.log('Login successful, but subscription expired on:', subscriptionEndDate.toLocaleDateString());
+                            const queryParams = new URLSearchParams({
+                                userId: loggedInUser.id,
+                                email: loggedInUser.email,
+                                currentPlan: profile.plan || 'N/A',
+                                role: profile.role,
+                                expired: 'true'
+                            });
+                            window.location.href = `renew-subscription.html?${queryParams.toString()}`;
+                            return; // Stop further execution
+                        }
+                    }
+                    // **** END REVISED EXPIRY/SETUP CHECK ****
+
+                    // If subscription is valid (date exists and is in the future), redirect based on role
                     if (profile.role === 'owner') {
                         window.location.href = 'owner-dashboard.html';
                     } else if (profile.role === 'walker') {
@@ -95,8 +159,9 @@ document.addEventListener('DOMContentLoaded', () => {
                         console.error('Unknown user role after login:', profile.role);
                         errorMessage.textContent = 'Login successful, but your account type is unrecognized. Please contact support.';
                         errorMessage.classList.remove('hidden');
-                        // Fallback redirection if role is somehow invalid
-                        window.location.href = 'index.html'; 
+                        // Potentially sign out and redirect to index or show a more generic error.
+                        // await _supabase.auth.signOut();
+                        window.location.href = 'index.html'; // Fallback redirection
                     }
                 }
             } else {
@@ -109,7 +174,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (error) {
             console.error('Login error:', error);
             if (error.message.includes("Email not confirmed")) {
-                errorMessage.textContent = "Login failed: Please verify your email address first. Check your inbox (and spam folder).";
+                errorMessage.innerHTML = `Login failed: Please verify your email address first. Check your inbox (and spam folder). If your subscription payment is pending or setup is incomplete, you'll be guided to resolve it after email verification.`;
             } else if (error.message.includes("Invalid login credentials")) {
                 errorMessage.textContent = "Login failed: Invalid email or password.";
             } else {
@@ -117,9 +182,9 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             errorMessage.classList.remove('hidden');
         } finally {
-            // This might run before redirection completes if there's no error.
-            // If an error occurs or profile fetching fails before redirection, then these will execute.
-            if (errorMessage.textContent || !authData.user) { // Only reset button if there was an error or no user to redirect
+            // Only reset button if login was not successful leading to a redirect,
+            // or if an error occurred before redirection.
+            if (!loginSuccessfulNoRedirectYet || errorMessage.textContent) {
                 loginBtn.textContent = 'Log In';
                 loginBtn.disabled = false;
             }
