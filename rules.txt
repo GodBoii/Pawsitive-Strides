@@ -1,0 +1,4 @@
+the fewer lines of code the better
+proceed like a 10x engineer
+do not stop working until you fulfil what user has asked for, do not jump to conclusion
+before coming to an conclusion reason about the probelm write 3 paragraphs on it and then proceed for actual implementation
