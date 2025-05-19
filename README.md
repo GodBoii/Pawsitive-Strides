@@ -1,129 +1,133 @@
-# Pawsitive Strides - Dog Walking Platform (India)
+# Pawsitive Strides 🐾 – Dog Walking Platform (India)
 
-## 1. Project Overview
+Pawsitive Strides is a modern, two-sided web platform connecting pet owners in India with verified, local dog walkers. The platform is designed for safety, convenience, and reliability, with a focus on the Indian market and payment ecosystem.
 
-Pawsitive Strides is a two-sided web platform designed to connect pet owners in India with verified, local dog walkers. It provides a convenient, safe, and reliable solution for scheduling and managing dog walking services.
+## 🚀 Features
 
-**Target Audience:**
+- **Responsive Design:** Works beautifully on desktop, tablet, and mobile.
+- **User Authentication:** Secure signup/login via Supabase Auth (email/password, email verification).
+- **Dual User Roles:** Distinct flows and dashboards for Pet Owners and Dog Walkers.
+- **Subscription Management:** 
+  - Pet Owners: Monthly (₹199) or Annual (₹499) plans.
+  - Dog Walkers: ₹19/month plan.
+  - Recurring billing, plan upgrades, and renewals.
+- **Indian Payment Gateway:** Razorpay integration (UPI, wallets, net banking, cards).
+- **Location Services:**
+  - Google Places Autocomplete for address input.
+  - Google Maps for precise location selection and search.
+  - Distance-based search and filtering.
+- **Dog Profiles:** Owners can add/manage detailed profiles for each dog (breed, age, temperament, vaccination records, etc.).
+- **Walker Profiles:** Walkers can set experience, availability, pricing, and upload verification documents.
+- **Booking System:** Calendar-based booking, flexible time slots, recurring walks.
+- **Quick Ride:** On-demand walk requests and real-time job matching.
+- **Background Verification:** (API-ready) for Aadhaar and ID proof.
+- **Real-Time Notifications:** (API-ready) via Firebase Cloud Messaging.
+- **Messaging:** (API-ready) for in-app communication.
+- **Admin Panel:** (API-ready) for user, booking, and payment management.
+- **Reviews & Ratings:** (API-ready) for pet owners to rate walkers.
+- **Security:** HTTPS, password hashing, RLS, and best practices throughout.
 
-*   **Pet Owners:** Busy individuals or families needing help walking their dogs.
-*   **Dog Walkers:** Individuals seeking flexible income opportunities.
+## 🏗️ Tech Stack
 
-**Key Goals:**
+- **Frontend:** HTML, Tailwind CSS, Vanilla JavaScript
+- **Backend:** Supabase (PostgreSQL, Auth, Storage, Edge Functions)
+- **API:** Vercel Serverless Functions (`/api`)
+- **Payments:** Razorpay (preferred), PayU (optional)
+- **Mapping:** Google Maps Platform (Maps, Places, Geocoding APIs)
+- **Hosting:** Vercel (static frontend + serverless backend)
+- **Notifications:** Firebase Cloud Messaging (planned)
+- **Background Checks:** Indian verification API (planned)
 
-*   User-friendly and trustworthy platform experience.
-*   Secure booking and payment processing tailored for India.
-*   Ensure the safety and well-being of pets and walkers.
-*   Build a scalable foundation for future growth within the Indian market.
+## 📝 Project Structure
 
-## 2. Features
+```
+public/         # All static assets (HTML, CSS, JS, images)
+  js/           # Modular JavaScript (signup, login, dashboard, etc.)
+  css/          # Tailwind and custom styles
+  image/        # Logos, icons, etc.
+api/            # Vercel serverless functions (Razorpay, etc.)
+supabase/       # Database schema, migrations, edge functions
+src/            # (If used) Source files, tests, modules
+```
 
-*   **Responsive Design:** Fully functional across desktops, tablets, and mobile devices.
-*   **User Authentication:** Secure signup/login (Email/Password).
-    *   Password Reset functionality.
-    *   Mobile OTP Verification (Planned).
-*   **Dual User Roles:** Distinct experiences and dashboards for Pet Owners and Dog Walkers.
-*   **Subscription Plans:** Simple monthly/annual plans for Pet Owners and a low-cost plan for Walkers.
-*   **Location Services (Google Maps):**
-    *   Address input with Google Places Autocomplete.
-    *   Interactive map for pinning precise location during profile setup/update.
-    *   Map view displaying user's location and nearby walkers/owners (using client-side geocoding).
-*   **Detailed Profiles:**
-    *   **Pet Owners:** Manage personal info, manage subscription.
-    *   **Dog Walkers:** Manage personal info, availability, rates (Planned), background verification status (Planned).
-    *   **Dogs:** Create detailed profiles for each pet (name, breed, age, needs, photo uploads, etc.).
-*   **Map View:** Visualize user's own location and nearby users of the opposite role.
-*   **Profile Management:** Users can update their profile information, including location via address input or map pinning.
-*   **Verification:** "Verified" badge concept for walkers (requires Background Check integration).
-*   **Admin Panel (Planned):** Backend interface for user management, platform oversight, etc.
-*   **Payment Gateway Integration (Planned):** Support for Indian payment methods (UPI, Wallets, Cards, Net Banking) via Razorpay or PayU.
-*   **Background Checks (Planned):** Integration with a third-party service for walker verification.
-*   **Booking System (Planned):** Functionality for owners to request walks and walkers to accept.
-*   **Messaging (Planned):** In-app communication between owners and walkers.
-*   **Notifications (Planned):** Push/in-app notifications for key events.
-*   **Reviews & Ratings (Planned):** System for owners to review walkers.
+## ⚡ Getting Started
 
-## 3. Tech Stack (Current Implementation)
+### 1. **Clone the Repository**
+```bash
+git clone https://github.com/GodBoii/Pawsitive-Strides.git
+cd Pawsitive-Strides
+```
 
-*   **Frontend:** HTML, CSS (Tailwind CSS), Vanilla JavaScript
-*   **Backend & Database:** Supabase (PostgreSQL Database, Auth, Storage, Realtime - leveraged as BaaS)
-*   **Mapping:** Google Maps Platform APIs (Maps JavaScript API, Geocoding API, Places API)
-*   **Hosting:** Deployed via standard web hosting or services supporting static sites + Supabase backend (e.g., Netlify, Vercel, GitHub Pages with limitations).
+### 2. **Supabase Setup**
+- Create a project at [Supabase](https://supabase.com/).
+- Run the SQL schema in `supabase.md` to set up tables, triggers, and RLS.
+- Configure Auth settings (Site URL, Redirect URLs, SMTP for custom email).
+- Set up Storage buckets if needed for image uploads.
 
-*(Note: The original plan allowed for frameworks like React/Vue/Angular and backend choices like Node/Django. The current implementation uses Vanilla JS and Supabase BaaS for simplicity and reduced code complexity as requested.)*
+### 3. **Google Maps API**
+- Create a project at [Google Cloud Console](https://console.cloud.google.com/).
+- Enable Maps JavaScript, Places, and Geocoding APIs.
+- Restrict your API key to your domain(s).
 
-## 4. Prerequisites
+### 4. **Razorpay Setup**
+- Create a Razorpay account and get your API keys.
+- Add them as environment variables in Vercel (see below).
 
-*   Web Browser (Chrome, Firefox, Edge recommended)
-*   Node.js and npm (for development dependencies, if any are added later, e.g., a local dev server)
-*   Supabase Account & Project Setup
-*   Google Cloud Platform Account & Project Setup
-*   API Keys:
-    *   Supabase Project URL and Anon Key
-    *   Google Maps API Key (with Maps JavaScript, Geocoding, Places APIs enabled)
+### 5. **Environment Variables (Vercel)**
+- In your Vercel project dashboard, add:
+  - `SUPABASE_URL`
+  - `SUPABASE_SERVICE_ROLE_KEY`
+  - `RAZORPAY_KEY_ID`
+  - `RAZORPAY_KEY_SECRET`
+  - (Optional: `SUPABASE_ANON_KEY` for frontend)
+- Redeploy after saving.
 
-## 5. Getting Started
+### 6. **Run Locally (for development)**
+- Use a local server (e.g., VS Code Live Server) to serve files from `public/`.
+- Or deploy to Vercel for full serverless/API support.
 
-1.  **Clone the Repository:**
-    ```bash
-    git clone <your-repository-url>
-    cd pawsitive-strides-frontend
-    ```
+## 💡 Key User Flows
 
-2.  **Install Dependencies (If applicable):**
-    *   If using a local development server or build tools:
-        ```bash
-        npm install
-        ```
-    *   If just opening HTML files directly, this step might not be needed initially.
+### **Pet Owner**
+1. **Find a Dog Walker:** Choose a plan, register, verify email, pay via Razorpay.
+2. **Complete Profile:** Add address, dog profiles, vaccination records, etc.
+3. **Book Walks:** Search for walkers, filter by distance/availability, send requests.
+4. **Manage:** View/edit profile, manage subscription, booking history, messages.
 
-3.  **Environment Variables:**
-    *   The Supabase URL and Anon Key are currently hardcoded in `common.js`. **For security, it's highly recommended to move these to environment variables** if deploying or sharing code. Create a `.env` file in the root (and add it to `.gitignore`) if using a build tool that supports it.
-    *   The Google Maps API key is currently hardcoded in `profile.html` and `signup.html`. **This is insecure for production.** Restrict your key in the Google Cloud Console using HTTP referrers and consider more secure loading methods for deployment.
+### **Dog Walker**
+1. **Become a Walker:** Choose plan, register, verify email, pay via Razorpay.
+2. **Complete Profile:** Add experience, availability, pricing, upload ID/Aadhaar.
+3. **Find Jobs:** View nearby walk requests, filter by pay/time, send requests.
+4. **Manage:** Edit profile, manage subscription, booking/job history, messages.
 
-4.  **Supabase Setup:**
-    *   Create a new project on [Supabase](https://supabase.com/).
-    *   Navigate to the **SQL Editor**.
-    *   Execute the SQL script provided in `supabase.md` (or the latest schema setup script) to create the `profiles`, `dogs` tables, RLS policies, and the `handle_new_user` trigger function.
-    *   Ensure the `id` column in `profiles` is correctly linked as a foreign key to `auth.users.id`.
-    *   Enable Row Level Security (RLS) on the `profiles` and `dogs` tables in the Supabase dashboard if not done by the script.
-    *   Add the required RLS policies as defined in `supabase.md` (or the latest script) if not created by the script.
+## 🔒 Security & Best Practices
 
-5.  **Google Maps API Key Setup:**
-    *   Create a project on [Google Cloud Platform](https://console.cloud.google.com/).
-    *   Enable the **Maps JavaScript API**, **Geocoding API**, and **Places API**.
-    *   Create an API Key.
-    *   **Crucially:** Add HTTP referrer restrictions to your API key for security, allowing your development URLs (e.g., `http://127.0.0.1:xxxx/*`, `http://localhost:xxxx/*`) and your final deployment domain(s).
-    *   Ensure billing is enabled on your GCP project (required even for the free tier).
-    *   Replace the placeholder API key in `profile.html` and `signup.html` with your actual key (or implement a more secure loading method).
+- All sensitive keys are stored in environment variables.
+- Supabase RLS (Row Level Security) is enabled for all tables.
+- Passwords are hashed and never stored in plaintext.
+- All communication is over HTTPS.
+- Regular security audits and code reviews.
 
-6.  **Run Locally:**
-    *   The simplest way is often using a live server extension in your code editor (like VS Code's Live Server) to open the `.html` files (e.g., `index.html`, `login.html`).
-    *   If you set up `npm`, you might have a command:
-        ```bash
-        npm run dev # or npm start
-        ```
+## 🛠️ Development & Contribution
 
-## 6. Key Functionality
+- **Contributions welcome!** Please fork, branch, and submit a pull request.
+- See `supabase.md` for the latest database schema and policies.
+- For major changes, open an issue first to discuss your proposal.
 
-*   **Signup:** Users choose a role (Owner/Walker) and plan, provide details (name, email, mobile, password, address). Coordinates are geocoded client-side and saved *after* successful Supabase Auth signup.
-*   **Login:** Standard email/password authentication via Supabase Auth.
-*   **Profile Management:** Users view/edit their basic info. Location can be updated via address input (with Autocomplete) or by pinning on an interactive map. Dog profiles can be added/managed by owners.
-*   **Map View:** Displays the logged-in user's location marker. Fetches other users of the opposite role, geocodes their addresses client-side, and displays their markers (no distance filtering currently).
+## 📄 License
 
-## 7. Contributing
+Specify your license here (e.g., MIT).
 
-Contributions are welcome! Please follow standard Git workflow (fork, branch, pull request). (Further details can be added).
+## 📝 Notes
 
-## 8. License
+- **Email Verification:** Supabase Auth sends verification emails. To use your own sender, configure SMTP in Supabase Auth settings.
+- **Production URLs:** Ensure your Supabase Auth "Site URL" and "Redirect URLs" are set to your Vercel deployment, not localhost.
+- **Custom Domains:** For best deliverability, use a custom domain for email and hosting.
 
-(Specify your license, e.g., MIT License)
+## 🙏 Acknowledgements
 
-## Vercel Environment Variables for Razorpay
+- Supabase for the backend platform.
+- Razorpay for Indian payment integration.
+- Google Maps for location services.
 
-1. Go to your project on [Vercel Dashboard](https://vercel.com/dashboard).
-2. Navigate to **Settings > Environment Variables**.
-3. Add the following variables:
-   - `RAZORPAY_KEY_ID` (your Razorpay API key ID)
-   - `RAZORPAY_KEY_SECRET` (your Razorpay API key secret)
-4. Redeploy your project after saving changes.
+**Pawsitive Strides – Making dog walking safe, easy, and joyful for everyone!**
