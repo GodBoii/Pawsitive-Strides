@@ -2,14 +2,14 @@ import crypto from 'crypto';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
-    res.status(405).json({ error: 'Method not allowed' });
+    res.status(405).json({ status: 'error', error: 'Method not allowed' });
     return;
   }
 
   const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
 
   if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
-    res.status(400).json({ error: 'Missing required fields.' });
+    res.status(400).json({ status: 'error', error: 'Missing required fields.' });
     return;
   }
 
@@ -20,8 +20,8 @@ export default async function handler(req, res) {
     .digest('hex');
 
   if (generated_signature === razorpay_signature) {
-    res.status(200).json({ success: true, message: 'Payment verified.' });
+    res.status(200).json({ status: 'success', message: 'Payment verified.' });
   } else {
-    res.status(400).json({ success: false, error: 'Invalid signature.' });
+    res.status(400).json({ status: 'error', error: 'Invalid signature.' });
   }
 } 
