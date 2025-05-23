@@ -131,158 +131,48 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             if (signUpError) throw signUpError;
-            if (!data.user) throw new Error("User not created in Supabase, cannot proceed to payment.");
+            if (!data.user) throw new Error("User not created in Supabase, cannot proceed to activation.");
             
             authResultData = data;
             console.log('Supabase user created/signed up:', authResultData.user);
 
-            // Step 2: Create Razorpay Order by calling your backend
-            signupBtn.textContent = 'Preparing Payment...';
-            console.log('Calling backend to create Razorpay order...');
-            const orderResponse = await fetch('/api/create-razorpay-order', {
+            // === Payment Bypassed: Activate subscription for free ===
+            signupBtn.textContent = 'Activating Subscription...';
+            const activateRes = await fetch('/api/activate-free-subscription', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    amount: amountInPrimaryUnit, // Send amount in primary unit (e.g., 199)
-                    currency: 'INR',
-                    receipt: `ps_ord_${Date.now()}`,
-                    notes: {
-                        userId: authResultData.user.id,
-                        email: emailInput.value.trim(),
-                        plan: planName,
-                        signup_flow: "Pawsitive Strides Web"
-                    }
+                    userId: authResultData.user.id,
+                    planName: planName
                 })
             });
-
-            if (!orderResponse.ok) {
-                const errData = await orderResponse.json();
-                console.error("Error from /create-razorpay-order:", errData);
-                throw new Error(errData.error || `Failed to create Razorpay order: ${orderResponse.statusText}`);
+            const activateData = await activateRes.json();
+            if (activateRes.ok && activateData.status === 'success') {
+                successMessage.textContent = 'Sign up Successful! Your subscription is active (no payment required). Please check your email to verify your account, then you can log in.';
+                successMessage.classList.remove('hidden');
+                errorMessage.classList.add('hidden');
+                signupForm.reset();
+                registrationFormSection.classList.add('fade-leave-to');
+                setTimeout(() => {
+                    registrationFormSection.classList.add('hidden');
+                    registrationFormSection.classList.remove('fade-leave-to');
+                    planSelectionSection.classList.remove('hidden', 'fade-leave-to');
+                    planSelectionSection.classList.add('fade-enter-active');
+                    setTimeout(() => planSelectionSection.classList.remove('fade-enter-active'), 500);
+                }, 500);
+            } else {
+                throw new Error(activateData.error || 'Subscription activation failed.');
             }
-            const razorpayOrder = await orderResponse.json();
-            console.log('Razorpay order created by backend:', razorpayOrder);
-            if (!razorpayOrder || !razorpayOrder.id) {
-                throw new Error("Invalid order response from backend.");
-            }
-
-            // Step 3: Open Razorpay Checkout
-            signupBtn.textContent = 'Redirecting to Payment...';
-            const options = {
-                key: "rzp_test_E5YJG4Db212xad", // Your public Razorpay Key ID
-                amount: razorpayOrder.amount,   // Amount from the backend's order creation response (in paise)
-                currency: razorpayOrder.currency,
-                name: "Pawsitive Strides",
-                description: `Subscription for ${planName.replace(/_/g, ' ')} Plan`,
-                order_id: razorpayOrder.id, // From backend's Razorpay order creation
-                handler: async function (response) {
-                    signupBtn.textContent = 'Verifying Payment...';
-                    signupBtn.disabled = true; // Keep disabled during verification
-                    console.log("Razorpay payment successful:", response);
-                    try {
-                        console.log('Calling backend to verify Razorpay payment...');
-                        const verificationRes = await fetch('/api/verify-razorpay-payment', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify({
-                                razorpay_payment_id: response.razorpay_payment_id,
-                                razorpay_order_id: response.razorpay_order_id,
-                                razorpay_signature: response.razorpay_signature,
-                                userId: authResultData.user.id,
-                                planName: planName,
-                                amount_paid_currency_unit: amountInPrimaryUnit, // Original amount in INR
-                                currency_paid: 'INR'
-                            })
-                        });
-
-                        const verificationData = await verificationRes.json();
-                        console.log("Backend verification response:", verificationData);
-
-                        if (verificationRes.ok && verificationData.status === 'success') {
-                            successMessage.textContent = 'Sign up & Payment Successful! Your subscription is active. Please check your email to verify your account, then you can log in.';
-                            successMessage.classList.remove('hidden');
-                            errorMessage.classList.add('hidden');
-                            signupForm.reset();
-                            // Go back to plan selection or a dedicated success message area
-                            registrationFormSection.classList.add('fade-leave-to');
-                            setTimeout(() => {
-                                registrationFormSection.classList.add('hidden');
-                                registrationFormSection.classList.remove('fade-leave-to');
-                                planSelectionSection.classList.remove('hidden', 'fade-leave-to');
-                                planSelectionSection.classList.add('fade-enter-active');
-                                setTimeout(() => planSelectionSection.classList.remove('fade-enter-active'), 500);
-                                // Consider redirect to login after a few seconds or provide login link clearly
-                                // setTimeout(() => { window.location.href = 'login.html'; }, 7000);
-                            }, 500);
-                        } else {
-                            throw new Error(verificationData.message || 'Payment verification failed by backend.');
-                        }
-                    } catch (verificationError) {
-                        console.error('Payment verification fetch/logic error:', verificationError);
-                        errorMessage.textContent = `Payment was processed, but verification failed: ${verificationError.message}. Please contact support with Order ID: ${response.razorpay_order_id}.`;
-                        errorMessage.classList.remove('hidden');
-                        successMessage.classList.add('hidden');
-                    } finally {
-                        // Button is re-enabled only if there was a final error or if flow completes to allow retry from plan selection
-                         signupBtn.textContent = 'Create Account & Proceed to Pay';
-                         signupBtn.disabled = false; // Re-enable for retry if needed, or if user stays on page.
-                    }
-                },
-                prefill: {
-                    name: nameInput.value.trim(),
-                    email: emailInput.value.trim(),
-                    contact: mobileInput.value.trim()
-                },
-                notes: {
-                    plan_selected: planName,
-                    supabase_user_id: authResultData.user.id, // Good for cross-referencing in Razorpay dashboard notes
-                    source_website: "Pawsitive Strides Signup"
-                },
-                theme: {
-                    color: "#059669" // Emerald-600
-                },
-                modal: {
-                    ondismiss: function() {
-                        console.log('Razorpay checkout modal dismissed.');
-                        // Only re-enable the button if it was truly dismissed without an attempt
-                        // If a payment attempt was made and failed, the 'payment.failed' handler should manage the button state.
-                        if (signupBtn.textContent === 'Redirecting to Payment...') { // Check if it was before an attempt
-                             signupBtn.textContent = 'Create Account & Proceed to Pay';
-                             signupBtn.disabled = false;
-                             errorMessage.textContent = 'Payment process was cancelled.';
-                             errorMessage.classList.remove('hidden');
-                        }
-                    }
-                }
-            };
-
-            const rzp = new Razorpay(options);
-
-            rzp.on('payment.failed', function (response) {
-                console.error('Razorpay payment.failed event:', response.error);
-                let detailedError = `Payment Failed: ${response.error.description || 'Unknown Razorpay Error'}`;
-                if (response.error.code) detailedError += ` (Code: ${response.error.code})`;
-                if (response.error.reason) detailedError += ` Reason: ${response.error.reason}`;
-                if (response.error.metadata && response.error.metadata.order_id) {
-                     detailedError += `. Order ID: ${response.error.metadata.order_id}`;
-                }
-                errorMessage.textContent = detailedError;
-                errorMessage.classList.remove('hidden');
-                successMessage.classList.add('hidden');
-                signupBtn.textContent = 'Create Account & Proceed to Pay';
-                signupBtn.disabled = false;
-            });
-
-            console.log("Opening Razorpay checkout...");
-            rzp.open();
-            // Button state is managed by Razorpay handlers now
+            signupBtn.textContent = 'Create Account';
+            signupBtn.disabled = false;
+            // === End Payment Bypass ===
 
         } catch (error) {
-            console.error('Overall Signup/Payment Error:', error);
-            errorMessage.textContent = `Error: ${error.message || 'An unexpected error occurred.'}`;
+            console.error('Signup/Activation Error:', error);
+            errorMessage.textContent = error.message || 'An unexpected error occurred during signup.';
             errorMessage.classList.remove('hidden');
             successMessage.classList.add('hidden');
-            signupBtn.textContent = 'Create Account & Proceed to Pay';
+            signupBtn.textContent = 'Create Account';
             signupBtn.disabled = false;
         }
     });
