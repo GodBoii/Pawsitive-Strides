@@ -1,0 +1,148 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600">
+  <!-- First trail of paw prints -->
+  <path d="M100,400 Q200,320 300,380 Q400,450 500,400 Q600,350 700,380" fill="none" stroke="#0D9488" stroke-width="1" stroke-opacity="0.15" stroke-dasharray="2,8" />
+  
+  <!-- Paw prints along first trail -->
+  <!-- Paw 1 -->
+  <g transform="translate(120,380) rotate(-15)">
+    <ellipse cx="0" cy="0" rx="8" ry="12" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="-7" cy="-10" rx="4" ry="5" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="0" cy="-12" rx="4" ry="5" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="7" cy="-10" rx="4" ry="5" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="0" cy="10" rx="5" ry="6" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+  </g>
+  
+  <!-- Paw 2 -->
+  <g transform="translate(230,330) rotate(10)">
+    <ellipse cx="0" cy="0" rx="8" ry="12" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="-7" cy="-10" rx="4" ry="5" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="0" cy="-12" rx="4" ry="5" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="7" cy="-10" rx="4" ry="5" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="0" cy="10" rx="5" ry="6" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+  </g>
+  
+  <!-- Paw 3 -->
+  <g transform="translate(350,400) rotate(25)">
+    <ellipse cx="0" cy="0" rx="8" ry="12" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="-7" cy="-10" rx="4" ry="5" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="0" cy="-12" rx="4" ry="5" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="7" cy="-10" rx="4" ry="5" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="0" cy="10" rx="5" ry="6" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+  </g>
+  
+  <!-- Paw 4 -->
+  <g transform="translate(460,410) rotate(-5)">
+    <ellipse cx="0" cy="0" rx="8" ry="12" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="-7" cy="-10" rx="4" ry="5" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="0" cy="-12" rx="4" ry="5" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="7" cy="-10" rx="4" ry="5" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="0" cy="10" rx="5" ry="6" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+  </g>
+  
+  <!-- Paw 5 -->
+  <g transform="translate(580,370) rotate(-20)">
+    <ellipse cx="0" cy="0" rx="8" ry="12" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="-7" cy="-10" rx="4" ry="5" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="0" cy="-12" rx="4" ry="5" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="7" cy="-10" rx="4" ry="5" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="0" cy="10" rx="5" ry="6" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+  </g>
+  
+  <!-- Second trail of paw prints -->
+  <path d="M50,250 Q150,200 250,220 Q350,240 450,210 Q550,180 650,220" fill="none" stroke="#0D9488" stroke-width="1" stroke-opacity="0.15" stroke-dasharray="2,8" />
+  
+  <!-- Paw prints along second trail -->
+  <!-- Paw 1 -->
+  <g transform="translate(90,230) rotate(-5)">
+    <ellipse cx="0" cy="0" rx="8" ry="12" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="-7" cy="-10" rx="4" ry="5" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="0" cy="-12" rx="4" ry="5" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="7" cy="-10" rx="4" ry="5" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="0" cy="10" rx="5" ry="6" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+  </g>
+  
+  <!-- Paw 2 -->
+  <g transform="translate(200,205) rotate(5)">
+    <ellipse cx="0" cy="0" rx="8" ry="12" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="-7" cy="-10" rx="4" ry="5" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="0" cy="-12" rx="4" ry="5" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="7" cy="-10" rx="4" ry="5" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="0" cy="10" rx="5" ry="6" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+  </g>
+  
+  <!-- Paw 3 -->
+  <g transform="translate(320,225) rotate(15)">
+    <ellipse cx="0" cy="0" rx="8" ry="12" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="-7" cy="-10" rx="4" ry="5" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="0" cy="-12" rx="4" ry="5" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="7" cy="-10" rx="4" ry="5" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="0" cy="10" rx="5" ry="6" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+  </g>
+  
+  <!-- Paw 4 -->
+  <g transform="translate(430,210) rotate(-10)">
+    <ellipse cx="0" cy="0" rx="8" ry="12" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="-7" cy="-10" rx="4" ry="5" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="0" cy="-12" rx="4" ry="5" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="7" cy="-10" rx="4" ry="5" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="0" cy="10" rx="5" ry="6" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+  </g>
+  
+  <!-- Paw 5 -->
+  <g transform="translate(520,195) rotate(-20)">
+    <ellipse cx="0" cy="0" rx="8" ry="12" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="-7" cy="-10" rx="4" ry="5" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="0" cy="-12" rx="4" ry="5" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="7" cy="-10" rx="4" ry="5" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="0" cy="10" rx="5" ry="6" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+  </g>
+  
+  <!-- Third trail of paw prints -->
+  <path d="M200,500 Q300,520 400,480 Q500,440 600,500" fill="none" stroke="#0D9488" stroke-width="1" stroke-opacity="0.15" stroke-dasharray="2,8" />
+  
+  <!-- Paw prints along third trail -->
+  <!-- Paw 1 -->
+  <g transform="translate(240,503) rotate(5)">
+    <ellipse cx="0" cy="0" rx="8" ry="12" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="-7" cy="-10" rx="4" ry="5" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="0" cy="-12" rx="4" ry="5" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="7" cy="-10" rx="4" ry="5" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="0" cy="10" rx="5" ry="6" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+  </g>
+  
+  <!-- Paw 2 -->
+  <g transform="translate(330,510) rotate(15)">
+    <ellipse cx="0" cy="0" rx="8" ry="12" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="-7" cy="-10" rx="4" ry="5" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="0" cy="-12" rx="4" ry="5" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="7" cy="-10" rx="4" ry="5" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="0" cy="10" rx="5" ry="6" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+  </g>
+  
+  <!-- Paw 3 -->
+  <g transform="translate(420,480) rotate(-10)">
+    <ellipse cx="0" cy="0" rx="8" ry="12" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="-7" cy="-10" rx="4" ry="5" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="0" cy="-12" rx="4" ry="5" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="7" cy="-10" rx="4" ry="5" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="0" cy="10" rx="5" ry="6" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+  </g>
+  
+  <!-- Paw 4 -->
+  <g transform="translate(500,450) rotate(-15)">
+    <ellipse cx="0" cy="0" rx="8" ry="12" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="-7" cy="-10" rx="4" ry="5" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="0" cy="-12" rx="4" ry="5" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="7" cy="-10" rx="4" ry="5" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="0" cy="10" rx="5" ry="6" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+  </g>
+  
+  <!-- Paw 5 -->
+  <g transform="translate(570,490) rotate(-5)">
+    <ellipse cx="0" cy="0" rx="8" ry="12" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="-7" cy="-10" rx="4" ry="5" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="0" cy="-12" rx="4" ry="5" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="7" cy="-10" rx="4" ry="5" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+    <ellipse cx="0" cy="10" rx="5" ry="6" fill="none" stroke="#0D9488" stroke-width="1.5" stroke-opacity="0.2" />
+  </g>
+</svg>

@@ -1,0 +1,407 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Walker Dashboard - Pawsitive Strides</title>
+    <!-- Tailwind CSS v3 (using the Play CDN for JIT benefits) -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+          theme: {
+            extend: {
+              fontFamily: {
+                sans: ['Inter', 'sans-serif'], // Example sans-serif
+                serif: ['Lora', 'serif'],     // Example serif
+              },
+              colors: {
+                emerald: {
+                    50: '#ecfdf5',
+                    100: '#d1fae5',
+                    200: '#a7f3d0',
+                    300: '#6ee7b7',
+                    400: '#34d399',
+                    500: '#10b981',
+                    600: '#059669',
+                    700: '#047857',
+                    800: '#065f46',
+                    900: '#064e3b',
+                },
+                amber: {
+                    50: '#fffbeb',
+                    100: '#fef3c7',
+                    200: '#fde68a',
+                    300: '#fcd34d',
+                    400: '#fbbf24',
+                    500: '#f59e0b',
+                    600: '#d97706',
+                    700: '#b45309',
+                    800: '#92400e',
+                    900: '#78350f',
+                },
+                stone: { // For warmer grays
+                    50: '#fafaf9',
+                    100: '#f5f5f4',
+                    200: '#e7e5e4',
+                    300: '#d6d3d1',
+                    400: '#a8a29e',
+                    500: '#78716c',
+                    600: '#57534e',
+                    700: '#44403c',
+                    800: '#292524',
+                    900: '#1c1917',
+                }
+              }
+            }
+          }
+        }
+      </script>
+    <!-- External CSS -->
+    <link rel="stylesheet" href="../css/styles.css"> <!-- Keep for any non-Tailwind specific styles -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+    <!-- Inline script for Google Maps API readiness and global initMap -->
+    <script>
+        function initMap() {
+          console.log(">>> Global initMap (HTML) CALLED BY GOOGLE <<<");
+          if (window.App && window.App.Maps && window.App.Maps._triggerInternalApiReady) {
+              console.log("    >>> Calling App.Maps._triggerInternalApiReady() from HTML's initMap");
+              window.App.Maps._triggerInternalApiReady();
+              console.log("    <<< App.Maps._triggerInternalApiReady() call completed");
+          } else {
+              console.warn("    !!! App.Maps or App.Maps._triggerInternalApiReady was not defined when HTML's initMap was called. " +
+                           "Ensure mapsModule.js is loaded correctly and defines App.Maps._triggerInternalApiReady.");
+              const attemptTriggerAgain = () => {
+                  if (window.App && window.App.Maps && window.App.Maps._triggerInternalApiReady) {
+                      console.log("    (Delayed) >>> Calling App.Maps._triggerInternalApiReady()");
+                      window.App.Maps._triggerInternalApiReady();
+                      console.log("    (Delayed) <<< App.Maps._triggerInternalApiReady() call completed");
+                  } else {
+                      console.error("    (Delayed) !!! App.Maps still not ready. Map initialization might fail.");
+                  }
+              };
+              if (window.requestAnimationFrame) {
+                window.requestAnimationFrame(attemptTriggerAgain);
+              } else {
+                setTimeout(attemptTriggerAgain, 0);
+              }
+          }
+          console.log("<<< Global initMap (HTML) END <<<");
+        }
+    </script>
+
+    <style>
+        /* Styles from styles.css that are dashboard-specific or utility */
+        .sidebar-link { display: block; padding: 0.75rem 1rem; border-radius: 0.5rem; /* Tailwind: rounded-lg */ transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out; cursor: pointer; }
+        .sidebar-link:hover { background-color: #d1fae5; /* emerald-100 */ color: #065f46; /* emerald-800 */ }
+        .sidebar-link.active { background-color: #059669; /* emerald-600 */ color: white; font-weight: 500; /* Tailwind: font-medium */ }
+        
+        .content-section { display: none; }
+        .content-section.active { display: block; }
+
+        .input-field { 
+            border: 1px solid #d6d3d1; /* stone-300 */
+            border-radius: 0.5rem; /* rounded-lg */
+            padding: 0.75rem 1rem; /* px-4 py-3 */
+            width: 100%; 
+        }
+        .input-field:focus {
+            outline: none;
+            box-shadow: 0 0 0 2px #34d399; /* ring-2 ring-emerald-400 */
+            border-color: transparent;
+        }
+
+        select.input-field { 
+            appearance: none; 
+            background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%2378716c' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e"); /* stone-500 */
+            background-position: right 0.75rem center; /* pr-3 */
+            background-repeat: no-repeat; 
+            background-size: 1.5em 1.5em; 
+            padding-right: 2.5rem; /* pr-10 */
+        }
+        textarea.input-field { min-height: 7rem; /* approx rows="4" */ }
+
+        #map-container { height: 600px; width: 100%; border-radius: 0.75rem; /* rounded-xl */ border: 1px solid #e7e5e4; /* stone-200 */ background-color: #fafaf9; /* stone-50 */ display: flex; align-items: center; justify-content: center; position: relative; }
+        .map-loading-message { padding: 1rem; text-align: center; color: #57534e; /* stone-600 */ }
+        
+        .quickride-walker-card { 
+            border: 1px solid #e7e5e4; /* stone-200 */ 
+            border-radius: 0.75rem; /* rounded-xl */ 
+            padding: 1rem; /* p-4 */
+            margin-bottom: 0.75rem; /* mb-3 */
+            background-color: white; 
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1), 0 2px 4px -1px rgba(0,0,0,0.06); /* shadow-md */
+        }
+        
+        .pac-container { z-index: 1050 !important; } /* Google Places Autocomplete dropdown */
+        #picker-map-container { height: 350px; width: 100%; border-radius: 0.5rem; border: 1px solid #d6d3d1; margin-top: 1rem; }
+
+        .animate-spin { animation: spin 1s linear infinite; }
+        @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
+        @media (max-width: 768px) {
+            #map-container { height: 400px; }
+            #picker-map-container { height: 300px; }
+            .mobile-sidebar { 
+                position: fixed; top: 0; left: 0; width: 80%; max-width: 280px; 
+                height: 100vh; z-index: 50; 
+                transition: transform 0.3s ease-in-out; transform: translateX(-100%); 
+                background-color: white;
+                box-shadow: 0 10px 15px -3px rgba(0,0,0,0.1), 0 4px 6px -2px rgba(0,0,0,0.05); /* shadow-lg */
+            }
+            .mobile-sidebar.active { transform: translateX(0); }
+            .mobile-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background-color: rgba(0,0,0,0.5); z-index: 40; display: none; }
+            .mobile-overlay.active { display: block; }
+        }
+    </style>
+</head>
+<body class="bg-emerald-50 min-h-screen font-sans text-stone-700">
+    <!-- Header -->
+     <header class="bg-white py-4 px-6 shadow-lg sticky top-0 z-30 rounded-b-lg">
+         <div class="max-w-7xl mx-auto flex justify-between items-center">
+             <div class="flex items-center">
+                <button id="mobile-menu-toggle" class="md:hidden mr-3 text-emerald-700 hover:text-emerald-800 focus:outline-none p-1 rounded hover:bg-emerald-100">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                    </svg>
+                </button>
+                 <a href="index.html" class="flex items-center">
+                     <img src="../../image/logo.svg" alt="Pawsitive Strides" class="w-10 h-10 mr-3">
+                     <span class="text-2xl font-serif font-bold text-emerald-800">Pawsitive Strides</span>
+                 </a>
+             </div>
+             <div id="auth-links" class="flex items-center space-x-3 sm:space-x-4">
+                 <span id="user-email" class="hidden sm:inline-block text-stone-600 text-sm font-medium"></span>
+                 <button id="logout-button" class="text-stone-700 hover:text-emerald-600 font-medium border border-stone-300 rounded-full px-3 sm:px-5 py-1.5 sm:py-2 text-sm transition-colors duration-150 hover:border-emerald-500 hover:shadow-sm">Log Out</button>
+             </div>
+         </div>
+     </header>
+
+    <div class="container mx-auto px-4 py-8">
+        <!-- Mobile overlay for sidebar -->
+        <div id="mobile-overlay" class="mobile-overlay"></div>
+
+        <div class="flex flex-wrap md:flex-nowrap md:space-x-8">
+            <!-- Sidebar - Desktop version -->
+            <aside class="hidden md:block w-full md:w-64 lg:w-72 mb-6 md:mb-0 sticky top-24 self-start" style="max-height: calc(100vh - 7rem);">
+                <nav class="bg-white p-5 rounded-xl shadow-xl border border-amber-200">
+                    <h2 class="text-xl font-serif font-semibold text-emerald-800 mb-4 pb-3 border-b border-stone-200">Dashboard</h2>
+                    <ul class="space-y-2">
+                        <li><a data-section="profile-section" class="sidebar-link active">Profile</a></li>
+                        <li><a data-section="map-section" class="sidebar-link">Map View</a></li>
+                        <li><a data-section="quickride-section" class="sidebar-link">Quick Ride</a></li>
+                    </ul>
+                </nav>
+            </aside>
+
+            <!-- Mobile Sidebar - Hidden by default -->
+            <aside id="mobile-sidebar" class="mobile-sidebar md:hidden border-r border-stone-200">
+                <div class="p-4 border-b border-stone-200 flex justify-between items-center">
+                    <h2 class="font-serif font-bold text-xl text-emerald-800">Dashboard Menu</h2>
+                    <button id="close-sidebar" class="text-emerald-700 hover:text-emerald-800 focus:outline-none p-1 rounded hover:bg-emerald-100">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+                <nav class="p-4">
+                    <ul class="space-y-3">
+                        <li><a data-section="profile-section" class="sidebar-link active text-stone-700">Profile</a></li>
+                        <li><a data-section="map-section" class="sidebar-link text-stone-700">Map View</a></li>
+                        <li><a data-section="quickride-section" class="sidebar-link text-stone-700">Quick Ride</a></li>
+                    </ul>
+                </nav>
+            </aside>
+
+            <!-- Main Content Area -->
+            <main id="main-content" class="w-full md:flex-1">
+                <div id="loading-state" class="text-center py-12">
+                    <div class="inline-block animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-emerald-600 mb-4"></div>
+                    <p class="text-stone-600 text-lg font-medium">Loading dashboard...</p>
+                </div>
+                <div id="profile-load-error" class="hidden text-center py-6 px-4 mb-6 bg-red-100 text-red-700 rounded-xl border border-red-300 shadow-md">
+                    Could not load profile data. Please try again later or contact support.
+                </div>
+
+                <!-- Profile Section -->
+                <section id="profile-section" class="content-section active">
+                    <h1 class="text-3xl md:text-4xl font-bold font-serif text-stone-800 mb-6">Your <span class="text-emerald-700">Profile</span></h1>
+                     <div class="bg-white p-6 md:p-8 rounded-2xl shadow-xl mb-8 border border-emerald-200">
+                        <h2 class="text-2xl font-semibold font-serif text-stone-800 mb-5">Basic Information</h2>
+                        <form id="profile-form" class="space-y-5">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                <div>
+                                    <label for="profile-name" class="block text-sm font-medium text-stone-700 mb-1">Full Name</label>
+                                    <input type="text" id="profile-name" name="full_name" class="input-field" required>
+                                </div>
+                                <div>
+                                    <label for="profile-email" class="block text-sm font-medium text-stone-700 mb-1">Email</label>
+                                    <input type="email" id="profile-email" name="email" class="input-field bg-stone-100 cursor-not-allowed" disabled>
+                                </div>
+                                <div>
+                                    <label for="profile-mobile" class="block text-sm font-medium text-stone-700 mb-1">Mobile</label>
+                                    <input type="tel" id="profile-mobile" name="mobile" pattern="[6-9][0-9]{9}" class="input-field" required>
+                                </div>
+                                <div>
+                                    <label for="profile-address" class="block text-sm font-medium text-stone-700 mb-1">Address</label>
+                                    <input type="text" id="profile-address" name="address" placeholder="Start typing or pin location on map" class="input-field" required>
+                                    <button type="button" id="pin-location-btn" class="mt-2 text-sm text-emerald-600 hover:underline hover:text-emerald-700 focus:outline-none">
+                                        Pin Location on Map
+                                    </button>
+                                    <div id="reverse-geocode-result" class="text-xs text-stone-500 mt-1 italic h-4"></div>
+                                </div>
+                            </div>
+
+                            <div id="picker-map-container" class="hidden rounded-lg overflow-hidden border border-stone-300">
+                                <p class="map-loading-message text-center text-stone-500 p-4">Loading map picker...</p>
+                            </div>
+
+                            <div class="pt-3">
+                                <button type="submit" class="bg-emerald-600 text-white hover:bg-emerald-700 font-medium rounded-lg px-6 py-2.5 transition-transform duration-150 ease-in-out transform hover:-translate-y-0.5 hover:shadow-md update-profile-btn">
+                                    Update Basic Info
+                                </button>
+                                <span class="profile-message ml-4 text-sm"></span>
+                            </div>
+                        </form>
+                    </div>
+
+                    <!-- Walker Specific Content -->
+                     <div id="walker-profile-content">
+                         <div class="bg-white p-6 md:p-8 rounded-2xl shadow-xl mb-8 border border-emerald-200">
+                             <h2 class="text-2xl font-semibold font-serif text-stone-800 mb-5">Walker Details</h2>
+                             <form id="walker-details-form" class="space-y-5">
+                                 <div><label for="walker-age" class="block text-sm font-medium text-stone-700 mb-1">Age</label><input type="number" id="walker-age" name="age" class="input-field bg-stone-100 cursor-not-allowed" disabled></div>
+                                 <div><label for="walker-about-me" class="block text-sm font-medium text-stone-700 mb-1">About Me / Bio</label><textarea id="walker-about-me" name="about_me" rows="4" class="input-field" placeholder="Introduce yourself, mention your love for dogs, special skills, etc."></textarea></div>
+                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                     <div><label for="walker-exp-years" class="block text-sm font-medium text-stone-700 mb-1">Years of Experience</label><input type="number" id="walker-exp-years" name="experience_years" min="0" class="input-field" placeholder="e.g., 2"></div>
+                                     <div><label for="walker-profile-picture" class="block text-sm font-medium text-stone-700 mb-1">Profile Picture (Coming soon)</label><input type="file" id="walker-profile-picture" name="profile_picture" accept="image/*" class="input-field bg-stone-100 cursor-not-allowed" disabled><p class="text-xs text-stone-500 mt-1">Photo upload will be available soon</p></div>
+                                 </div>
+                                 <div><label for="walker-exp-summary" class="block text-sm font-medium text-stone-700 mb-1">Experience Summary</label><textarea id="walker-exp-summary" name="experience_summary" rows="4" class="input-field" placeholder="Describe your experience with different breeds, temperaments, or any specific training."></textarea></div>
+                                 <div>
+                                     <label class="block text-sm font-medium text-stone-700 mb-2">Weekly Availability</label>
+                                     <p class="text-xs text-stone-500 mb-3">Select the days and time slots you're typically available for walks.</p>
+                                     <div class="space-y-4" id="availability-container">
+                                         <!-- JS will populate day rows here -->
+                                     </div>
+                                     <div class="mt-4 flex items-center">
+                                         <input type="checkbox" id="recurring-availability" name="recurring_availability" class="h-4 w-4 text-emerald-600 border-stone-300 rounded focus:ring-emerald-500 mr-2">
+                                         <label for="recurring-availability" class="text-sm text-stone-700">This is my recurring weekly availability</label>
+                                     </div>
+                                 </div>
+                                 <button type="submit" class="bg-amber-500 text-white hover:bg-amber-600 font-medium rounded-lg px-6 py-2.5 transition-transform duration-150 ease-in-out transform hover:-translate-y-0.5 hover:shadow-md update-walker-btn">Update Walker Details</button>
+                                 <span class="walker-message ml-4 text-sm"></span>
+                             </form>
+                         </div>
+                     </div>
+                </section>
+
+                <!-- Map Section -->
+                 <section id="map-section" class="content-section">
+                     <h1 class="text-3xl md:text-4xl font-bold font-serif text-stone-800 mb-2">Nearby <span id="map-title-role" class="text-emerald-700">Pet Owners</span></h1>
+                     <p class="text-sm text-stone-600 mb-6">
+                         Showing your location (based on profile address) and locations of nearby <span id="map-description-role">pet owners</span>.
+                         <span class="text-emerald-700 block mt-1">Ensure your address is updated in the 'Profile' section to see your location here.</span>
+                         <span class="text-amber-700 italic block mt-1">Note: Geocoding addresses for other users on load can be slow.</span>
+                    </p>
+                     <div id="map-container" class="rounded-xl shadow-lg border-amber-200">
+                         <p class="map-loading-message text-lg">Map loading...</p>
+                     </div>
+                 </section>
+
+                <!-- Quick Ride Section - MODIFIED for Walker -->
+                <section id="quickride-section" class="content-section">
+                    <div class="bg-white p-6 md:p-8 rounded-2xl shadow-xl border border-emerald-200">
+                        <h1 class="text-3xl md:text-4xl font-bold font-serif text-stone-800 mb-8">Quick <span class="text-emerald-700">Rides</span></h1>
+
+                        <!-- Accepted Rides Section -->
+                        <div id="my-accepted-quickride-list-container" class="mb-10">
+                            <h2 class="text-2xl font-semibold font-serif text-emerald-700 mb-4">Your Accepted Rides</h2>
+                            <div id="my-accepted-quickride-list" class="space-y-4">
+                                <p id="no-accepted-rides-message" class="text-stone-500 italic text-lg">You haven't accepted any Quick Rides yet.</p>
+                                <!-- Accepted ride cards will be inserted here by JS -->
+                            </div>
+                        </div>
+            
+                        <hr class="my-8 border-stone-300">
+            
+                        <!-- Available Rides Section -->
+                        <div>
+                            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-5">
+                                <h2 class="text-2xl font-semibold font-serif text-amber-700 mb-3 sm:mb-0">Available Quick Rides Near You</h2>
+                                <button id="refresh-available-rides-btn" class="text-sm text-emerald-600 hover:text-emerald-700 focus:outline-none flex items-center px-4 py-2 border border-emerald-300 rounded-lg hover:bg-emerald-50 transition-colors duration-150 active:bg-emerald-100">
+                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mr-2 hidden animate-spin" id="refresh-spinner" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m-15.357-2a8.001 8.001 0 0015.357 2M15 15H9" /></svg>
+                                    Refresh
+                                </button>
+                            </div>
+                            <p id="available-rides-message" class="text-stone-500 mb-4 italic text-lg">Loading available rides...</p>
+                            <div id="available-quickride-list" class="space-y-4">
+                                <!-- Available ride cards will be inserted here by JS -->
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <footer class="mt-12 text-center text-stone-500 text-sm py-8">
+        <p>© 2024 Pawsitive Strides. All rights reserved.</p>
+    </footer>
+
+    <!-- User Profile Modal -->
+    <div id="user-profile-modal" class="fixed inset-0 bg-stone-900 bg-opacity-75 hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[90vh] overflow-y-auto border border-amber-300">
+            <div class="relative p-6 sm:p-8">
+                <button id="close-profile-modal" class="absolute top-4 right-4 text-stone-400 hover:text-stone-600 p-1 rounded-full hover:bg-stone-100 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+                <div id="modal-user-basic" class="text-center mb-6">
+                    <div class="h-24 w-24 mx-auto bg-emerald-100 rounded-full mb-4 flex items-center justify-center ring-4 ring-emerald-200 shadow-md">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-12 w-12 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+                    </div>
+                    <h2 id="modal-user-name" class="text-2xl font-bold font-serif text-stone-800">Loading...</h2>
+                    <p id="modal-user-role" class="text-emerald-700 font-semibold text-sm"></p>
+                    <p id="modal-user-distance" class="text-xs text-stone-500 mt-1"></p>
+                </div>
+                <div id="modal-loading" class="py-8 text-center"><div class="inline-block animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-emerald-600 mb-3"></div><p class="text-stone-600">Loading profile information...</p></div>
+                <div id="modal-error" class="py-8 text-center hidden"><p class="text-red-600">Could not load profile information.</p></div>
+
+                <!-- Walker content for modal -->
+                <div id="modal-walker-content" class="space-y-5 text-sm hidden">
+                    <div class="border-t border-stone-200 pt-4"><h3 class="font-semibold font-serif text-lg text-stone-800 mb-1">About Me</h3><p id="modal-walker-about" class="text-stone-700 leading-relaxed"></p></div>
+                    <div><h3 class="font-semibold font-serif text-lg text-stone-800 mb-1">Experience</h3>
+                        <p><span class="font-medium text-stone-600">Years:</span> <span id="modal-walker-experience-years" class="text-stone-700"></span></p>
+                        <p id="modal-walker-experience-summary" class="text-stone-700 mt-1 leading-relaxed"></p>
+                    </div>
+                    <div><h3 class="font-semibold font-serif text-lg text-stone-800 mb-1">Contact</h3>
+                        <p><span class="font-medium text-stone-600">Email:</span> <a id="modal-walker-email" href="#" class="text-emerald-600 hover:underline"></a></p>
+                        <p><span class="font-medium text-stone-600">Mobile:</span> <a id="modal-walker-mobile" href="#" class="text-emerald-600 hover:underline"></a></p>
+                    </div>
+                    <div><h3 class="font-semibold font-serif text-lg text-stone-800 mb-2">Availability</h3><div id="modal-walker-availability" class="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1 text-stone-700"></div></div>
+                </div>
+
+                <!-- Owner content for modal -->
+                <div id="modal-owner-content" class="space-y-5 text-sm hidden">
+                    <div class="border-t border-stone-200 pt-4"><h3 class="font-semibold font-serif text-lg text-stone-800 mb-1">Contact Information</h3>
+                        <p><span class="font-medium text-stone-600">Email:</span> <a id="modal-owner-email" href="#" class="text-emerald-600 hover:underline"></a></p>
+                        <p><span class="font-medium text-stone-600">Mobile:</span> <a id="modal-owner-mobile" href="#" class="text-emerald-600 hover:underline"></a></p>
+                        <p><span class="font-medium text-stone-600">Address:</span> <span id="modal-owner-address" class="text-stone-700"></span></p>
+                    </div>
+                    <div><h3 class="font-semibold font-serif text-lg text-stone-800 mb-1">Preferred Communication</h3><p id="modal-owner-communication" class="text-stone-700"></p></div>
+                    <div><h3 class="font-semibold font-serif text-lg text-stone-800 mb-1">Notes for Walkers</h3><p id="modal-owner-notes" class="text-stone-700 leading-relaxed"></p></div>
+                    <div id="modal-owner-dogs-section"><h3 class="font-semibold font-serif text-lg text-stone-800 mb-2">Dogs</h3><div id="modal-owner-dogs" class="space-y-3"></div><p id="modal-no-dogs" class="text-stone-500 hidden">No dogs available</p></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Module Scripts -->
+    <script src="../js/common.js" defer></script>
+    <script src="../js/profileModalModule.js" defer></script> 
+    <script src="../js/mapsModule.js" defer></script>
+    <script src="../js/userProfileModule.js" defer></script>
+    <script src="../js/walkerProfileModule.js" defer></script>
+    <script src="../js/quickRideWalkerModule.js" defer></script>
+    <script src="../js/walker-dashboard-main.js" defer></script>
+</body>
+</html>

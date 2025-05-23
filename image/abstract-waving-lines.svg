@@ -1,0 +1,52 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 400">
+  <!-- Background rectangle (optional, transparent) -->
+  <rect width="800" height="400" fill="transparent" />
+  
+  <!-- First wavy line (thickest) -->
+  <path d="M 50,180 
+           C 150,120 250,220 350,150 
+           S 550,80 650,140 
+           S 850,220 950,160" 
+        fill="none" 
+        stroke="#5fbfb8" 
+        stroke-width="12" 
+        stroke-opacity="0.4" 
+        stroke-linecap="round"
+        stroke-linejoin="round" />
+  
+  <!-- Second wavy line -->
+  <path d="M 50,220 
+           C 180,150 250,260 350,200 
+           S 550,130 650,190 
+           S 850,260 950,200" 
+        fill="none" 
+        stroke="#5fbfb8" 
+        stroke-width="10" 
+        stroke-opacity="0.35" 
+        stroke-linecap="round"
+        stroke-linejoin="round" />
+  
+  <!-- Third wavy line -->
+  <path d="M 50,260 
+           C 150,190 280,300 380,230 
+           S 580,160 680,230 
+           S 850,300 950,240" 
+        fill="none" 
+        stroke="#5fbfb8" 
+        stroke-width="8" 
+        stroke-opacity="0.3" 
+        stroke-linecap="round"
+        stroke-linejoin="round" />
+        
+  <!-- Fourth wavy line (thinnest) -->
+  <path d="M 50,290 
+           C 170,230 270,330 370,260 
+           S 570,200 670,260 
+           S 870,320 970,270" 
+        fill="none" 
+        stroke="#5fbfb8" 
+        stroke-width="6" 
+        stroke-opacity="0.25" 
+        stroke-linecap="round"
+        stroke-linejoin="round" />
+</svg>
