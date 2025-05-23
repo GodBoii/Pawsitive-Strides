@@ -129,7 +129,11 @@
                     <div class="bg-white rounded-2xl shadow-xl p-6 border border-amber-200 flex flex-col hover:shadow-2xl transition-shadow duration-300">
                         <div class="bg-amber-100 text-amber-800 px-3 py-1 rounded-full text-xs font-semibold inline-block mb-4 self-start">Pet Owner</div>
                         <h3 class="text-2xl font-bold font-serif text-stone-800 mb-1">Monthly Access</h3>
-                        <div class="flex items-baseline mb-4"> <span class="text-4xl font-bold text-stone-800">₹199</span> <span class="text-stone-500 ml-1.5">/month</span> </div>
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="text-xl font-semibold text-emerald-700">Pet Owner - Monthly</h3>
+                            <input type="radio" name="plan" value="owner_monthly" data-role="owner" class="select-plan-btn form-radio h-5 w-5 text-emerald-600 focus:ring-2 focus:ring-offset-1 focus:ring-emerald-500 cursor-pointer">
+                        </div>
+                        <p class="text-3xl font-bold text-stone-800">Free <span class="text-base font-normal text-stone-500"></span></p>
                         <p class="text-stone-600 text-sm mb-6 flex-grow">Access verified walkers, manage dog profiles, and book walks anytime.</p>
                         <button data-plan="owner_monthly" data-role="owner" class="select-plan-btn mt-auto w-full py-3 px-4 bg-emerald-600 text-white font-medium rounded-lg hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition-transform duration-200 ease-in-out transform hover:-translate-y-0.5 hover:shadow-lg">
                             Choose Monthly
@@ -140,8 +144,12 @@
                         <div class="absolute -top-3 left-1/2 transform -translate-x-1/2 bg-amber-400 text-emerald-900 px-3 py-0.5 rounded-full text-xs font-bold shadow-md">Best Value</div>
                         <div class="bg-amber-50 text-amber-800 px-3 py-1 rounded-full text-xs font-semibold inline-block mb-4 self-start">Pet Owner</div>
                         <h3 class="text-2xl font-bold font-serif mb-1 text-white">Annual Access</h3>
-                        <div class="flex items-baseline mb-1"> <span class="text-4xl font-bold text-white">₹499</span> <span class="text-emerald-200 ml-1.5">/year</span> </div>
-                        <div class="text-amber-300 text-sm font-semibold mb-4">(Save over 75%!)</div>
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="text-xl font-semibold text-amber-700">Pet Owner - Annual</h3>
+                            <input type="radio" name="plan" value="owner_annual" data-role="owner" class="select-plan-btn form-radio h-5 w-5 text-emerald-600 focus:ring-2 focus:ring-offset-1 focus:ring-amber-500 cursor-pointer">
+                        </div>
+                        <p class="text-3xl font-bold text-stone-800">Free <span class="text-base font-normal text-stone-500"></span></p>
+                        <div class="text-amber-300 text-sm font-semibold mb-4">(Save over 75!)</div>
                         <p class="text-emerald-100 text-sm mb-6 flex-grow">All monthly benefits plus priority support and exclusive discounts.</p>
                         <button data-plan="owner_annual" data-role="owner" class="select-plan-btn mt-auto w-full py-3 px-4 bg-amber-400 text-emerald-800 font-medium rounded-lg hover:bg-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-300 focus:ring-offset-2 focus:ring-offset-emerald-700 transition-transform duration-200 ease-in-out transform hover:-translate-y-0.5 hover:shadow-lg">
                             Choose Annual
@@ -151,7 +159,11 @@
                     <div class="bg-white rounded-2xl shadow-xl p-6 border border-amber-200 flex flex-col hover:shadow-2xl transition-shadow duration-300">
                         <div class="bg-emerald-100 text-emerald-800 px-3 py-1 rounded-full text-xs font-semibold inline-block mb-4 self-start">Dog Walker</div>
                         <h3 class="text-2xl font-bold font-serif text-stone-800 mb-1">Walker Access</h3>
-                        <div class="flex items-baseline mb-4"> <span class="text-4xl font-bold text-stone-800">₹19</span> <span class="text-stone-500 ml-1.5">/month</span> </div>
+                        <div class="flex justify-between items-center mb-3">
+                            <h3 class="text-xl font-semibold text-emerald-700">Dog Walker - Access</h3>
+                            <input type="radio" name="plan" value="walker_monthly" data-role="walker" class="select-plan-btn form-radio h-5 w-5 text-emerald-600 focus:ring-2 focus:ring-offset-1 focus:ring-emerald-500 cursor-pointer">
+                        </div>
+                        <p class="text-3xl font-bold text-stone-800">Free <span class="text-base font-normal text-stone-500"></span></p>
                         <p class="text-stone-600 text-sm mb-6 flex-grow">Create your profile, get verified, find walking jobs, and start earning.</p>
                         <button data-plan="walker_monthly" data-role="walker" class="select-plan-btn mt-auto w-full py-3 px-4 bg-amber-500 text-white font-medium rounded-lg hover:bg-amber-600 focus:outline-none focus:ring-2 focus:ring-amber-500 focus:ring-offset-2 transition-transform duration-200 ease-in-out transform hover:-translate-y-0.5 hover:shadow-lg">
                             Become a Walker
@@ -184,9 +196,7 @@
                             <div> <label for="address" class="block text-sm font-medium text-stone-700 mb-1">Address (Street, Area)</label> <input type="text" id="address" name="address" placeholder="e.g., 123 Green St, Natureville" class="w-full px-4 py-3 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent" required> <p class="text-xs text-stone-500 mt-1">We need this to find walkers/jobs near you.</p> </div>
                             <div id="age-field-walker" class="hidden"> <label for="age-walker" class="block text-sm font-medium text-stone-700 mb-1">Your Age</label> <input type="number" id="age-walker" name="age_walker" min="18" class="w-full px-4 py-3 border border-stone-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"> <p class="text-xs text-stone-500 mt-1">Minimum age to be a walker is 18.</p> </div>
                             <div class="pt-2"> 
-                                <button type="submit" class="w-full py-3 px-4 bg-emerald-600 text-white font-medium rounded-lg hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition-transform duration-200 ease-in-out transform hover:-translate-y-0.5 hover:shadow-lg signup-btn"> 
-                                    Create Account & Proceed to Pay 
-                                </button> 
+                                <button type="submit" class="signup-btn w-full py-3 px-4 bg-emerald-600 text-white font-medium rounded-lg hover:bg-emerald-700 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition-transform duration-200 ease-in-out transform hover:-translate-y-0.5 hover:shadow-lg">Create Account</button> 
                             </div>
                         </form>
                         <div class="text-center mt-6">
