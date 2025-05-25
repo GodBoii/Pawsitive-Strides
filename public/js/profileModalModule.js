@@ -32,9 +32,7 @@
 
     // Ensure pawsitiveCommon and its utilities are loaded
     if (!window.pawsitiveCommon || !window.pawsitiveCommon.createSafeElement || !window.pawsitiveCommon.sanitizeHTML) {
-        console.error("[ProfileModalModule] pawsitiveCommon or its utilities not found.");
-        // Optionally, prevent further execution or set a flag
-        App.ProfileModal = { init: () => {}, show: () => { console.error("ProfileModalModule not fully initialized due to missing dependencies.");} };
+        App.ProfileModal = { init: () => {}, show: () => { } };
         return;
     }
     const { createSafeElement, sanitizeHTML } = window.pawsitiveCommon;
@@ -53,7 +51,6 @@
 
     function _populateWalkerModalContent(profile) {
         if (!_domElements.modalWalkerContent) {
-            console.warn("[ProfileModalModule] Walker content container not found in DOM elements for modal.");
             return;
         }
         
@@ -88,7 +85,6 @@
                     if(!hasAvailability) _domElements.modalWalkerAvailability.textContent = 'Availability not specified.';
                 } catch (e) { 
                     _domElements.modalWalkerAvailability.textContent = 'Error loading availability.'; 
-                    console.error("[ProfileModalModule] Error parsing walker availability for modal:", e); 
                 }
             } else {
                 _domElements.modalWalkerAvailability.textContent = 'Availability not specified.';
@@ -99,7 +95,6 @@
 
     async function _populateOwnerModalContent(profile, ownerId) {
         if (!_domElements.modalOwnerContent) {
-            console.warn("[ProfileModalModule] Owner content container not found in DOM elements for modal.");
             return;
         }
 
@@ -140,7 +135,6 @@
                 }
             } catch(e) {
                 _domElements.modalOwnerDogs.textContent = 'Error loading dog details.'; 
-                console.error("[ProfileModalModule] Error fetching dogs for modal:", e);
             }
         }
         _domElements.modalOwnerContent.classList.remove('hidden');
@@ -195,25 +189,20 @@
                     _domElements.userProfileModal.classList.remove('flex');
                 });
             } else {
-                console.warn("[ProfileModalModule] Could not set up close button for modal.");
+                // console.warn("[ProfileModalModule] Could not set up close button for modal.");
             }
-            console.log('[ProfileModalModule] Initialized.');
         },
 
         show: async function(userId, userRole, userName = 'User', userDistance = null) {
             if (!_supabase) {
-                console.error("[ProfileModalModule] Supabase client not initialized.");
                 alert("Error: Profile display service unavailable.");
                 return;
             }
             if (!_domElements.userProfileModal || !_domElements.modalUserName || !_domElements.modalLoading || 
                 !_domElements.modalError || !_domElements.modalWalkerContent || !_domElements.modalOwnerContent) {
-                console.error("[ProfileModalModule] Essential modal DOM elements are missing or not initialized.");
                 alert("Error: Could not display profile (UI elements missing).");
                 return;
             }
-
-            console.log(`[ProfileModalModule] Attempting to show profile for User ID: ${userId}, Role: ${userRole}`);
 
             // Reset and prepare modal
             _domElements.modalUserName.textContent = sanitizeHTML(userName);
@@ -253,7 +242,6 @@
                 _domElements.modalLoading.classList.add('hidden');
 
             } catch (error) {
-                console.error('[ProfileModalModule] Error fetching/displaying profile:', error);
                 if(_domElements.modalLoading) _domElements.modalLoading.classList.add('hidden');
                 if(_domElements.modalError) {
                     _domElements.modalError.classList.remove('hidden');

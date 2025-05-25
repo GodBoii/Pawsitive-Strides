@@ -24,7 +24,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 .single();
 
                             if (profileError || !profile) {
-                                console.error('Error fetching profile role for dashboard link:', profileError);
                                 linkElement.href = 'login.html'; // Fallback to login if role cannot be determined
                                 linkElement.textContent = 'Log In'; // Revert text
                             } else {
@@ -38,7 +37,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 }
                             }
                         } catch (e) {
-                            console.error('Exception fetching profile for dashboard link:', e);
                             linkElement.href = 'login.html';
                             linkElement.textContent = 'Log In';
                         }
@@ -79,7 +77,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
     } catch (error) {
-        console.error('Error initializing index page:', error);
+        // Handle error silently in production
     }
 
     // Mobile menu functionality (remains the same)

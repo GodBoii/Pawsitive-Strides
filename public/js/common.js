@@ -8,7 +8,6 @@ const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBh
 function createSupabaseClient() {
     // Ensure supabase is loaded (it's globally available from the CDN script)
     if (typeof supabase === 'undefined' || !supabase.createClient) {
-        console.error("Supabase client library not found. Make sure it's included in your HTML.");
         return null;
     }
     const { createClient } = supabase;
@@ -21,7 +20,6 @@ function setupLogout(supabaseClient) {
     if (logoutButton) {
         logoutButton.addEventListener('click', async () => {
             if (!supabaseClient) {
-                console.error("Supabase client not available for logout.");
                 return;
             }
             await supabaseClient.auth.signOut();
@@ -33,7 +31,6 @@ function setupLogout(supabaseClient) {
 // Check if user is authenticated
 async function checkAuth(supabaseClient) {
     if (!supabaseClient) {
-        console.error("Supabase client not available for auth check.");
         return null;
     }
     const { data } = await supabaseClient.auth.getSession();
@@ -63,7 +60,6 @@ async function requireNoAuth(supabaseClient, redirectUrl = 'profile.html') {
 // General Purpose Utilities
 function sanitizeHTML(unsafeText) {
     if (typeof unsafeText !== 'string') {
-        console.warn("sanitizeHTML received non-string input:", unsafeText);
         return '';
     }
     const div = document.createElement('div');

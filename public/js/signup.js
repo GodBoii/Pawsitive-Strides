@@ -4,7 +4,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     // Initializing Supabase client
     const _supabase = window.pawsitiveCommon.createSupabaseClient();
-    console.log('Supabase Initialized (Signup Page)');
 
     // Check if already logged in
     window.pawsitiveCommon.requireNoAuth(_supabase);
@@ -121,7 +120,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         try {
             // Step 1: Create Supabase Auth User (profile created by trigger with 'pending_payment')
-            console.log("Attempting Supabase signUp with metadata:", userDataForMeta);
             const { data, error: signUpError } = await _supabase.auth.signUp({
                 email: emailInput.value.trim(),
                 password: passwordInput.value,
@@ -134,7 +132,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!data.user) throw new Error("User not created in Supabase, cannot proceed to activation.");
             
             authResultData = data;
-            console.log('Supabase user created/signed up:', authResultData.user);
 
             // === Payment Bypassed: Activate subscription for free ===
             signupBtn.textContent = 'Activating Subscription...';
@@ -168,12 +165,17 @@ document.addEventListener('DOMContentLoaded', () => {
             // === End Payment Bypass ===
 
         } catch (error) {
-            console.error('Signup/Activation Error:', error);
-            errorMessage.textContent = error.message || 'An unexpected error occurred during signup.';
-            errorMessage.classList.remove('hidden');
-            successMessage.classList.add('hidden');
+            showError(error.message || 'An error occurred during signup');
             signupBtn.textContent = 'Create Account';
             signupBtn.disabled = false;
         }
     });
+
+    function showError(message) {
+        const errorElement = document.getElementById('errorMessage');
+        if (errorElement) {
+            errorElement.textContent = message;
+            errorElement.classList.remove('hidden');
+        }
+    }
 });

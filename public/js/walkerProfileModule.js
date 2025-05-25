@@ -11,8 +11,7 @@
 
     // Ensure pawsitiveCommon and its utilities are loaded
     if (!window.pawsitiveCommon || !window.pawsitiveCommon.createSafeElement || !window.pawsitiveCommon.sanitizeHTML) {
-        console.error("[WalkerProfileModule] pawsitiveCommon or its utilities not found. Module cannot function correctly.");
-        App.WalkerProfile = { init: () => { console.error("WalkerProfileModule not fully initialized due to missing common utilities.");} };
+        App.WalkerProfile = { init: () => { /* Module not initialized */ } };
         return;
     }
     const { createSafeElement, sanitizeHTML } = window.pawsitiveCommon;
@@ -20,7 +19,6 @@
 
     function populateWalkerDetailsForm() {
         if (!_userProfileData || !_domElements.walkerDetailsForm) return;
-        console.log('[WalkerProfileModule] Populating walker details form with:', _userProfileData);
 
         const form = _domElements.walkerDetailsForm;
         if (_domElements.walkerAgeInput) _domElements.walkerAgeInput.value = _userProfileData.age || '';
@@ -56,8 +54,6 @@
             updated_at: new Date()
         };
 
-        console.log('[WalkerProfileModule] Sending walker details updates to Supabase:', updates);
-
         try {
             const { data: updatedProfile, error } = await _supabase
                 .from('profiles')
@@ -71,10 +67,8 @@
             _domElements.walkerMessageElement.textContent = 'Walker details updated successfully!';
             _domElements.walkerMessageElement.className = 'walker-message ml-4 text-sm text-emerald-700'; // Themed success
             _userProfileData = { ..._userProfileData, ...updatedProfile }; // Update local cache
-            console.log("[WalkerProfileModule] Walker details updated locally:", _userProfileData);
 
         } catch (error) {
-            console.error("[WalkerProfileModule] Error updating walker details:", error);
             _domElements.walkerMessageElement.textContent = `Error: ${error.message}`;
             _domElements.walkerMessageElement.className = 'walker-message ml-4 text-sm text-red-700'; // Themed error
         }
@@ -201,7 +195,6 @@
     
     function loadAvailabilitySchedule(scheduleData) { 
         if (!_domElements.availabilityContainer || !scheduleData) return;
-        console.log("[WalkerProfileModule] Loading availability schedule:", scheduleData);
 
         if (_domElements.walkerRecurringAvailCheckbox) {
             _domElements.walkerRecurringAvailCheckbox.checked = scheduleData.recurring || false;
@@ -254,7 +247,6 @@
                         if (to > from) {
                             slots.push(`${from}-${to}`);
                         } else {
-                            console.warn(`[WalkerProfileModule] Invalid time slot for ${day}: ${from} - ${to}. 'To' time must be after 'From' time. Slot skipped.`);
                             // Optionally provide UI feedback here
                         }
                     }
@@ -264,7 +256,6 @@
                 }
             }
         });
-        console.log("[WalkerProfileModule] Collected availability data:", schedule);
         return schedule;
     }
 
@@ -276,12 +267,9 @@
             _userProfileData = profileData;
             _domElements = domRefs;
 
-            console.log('[WalkerProfileModule] Initialized with profile:', _userProfileData, 'and DOM:', _domElements);
-
             if (_domElements.walkerContentElement) {
                 _domElements.walkerContentElement.classList.remove('hidden');
             } else {
-                console.error("[WalkerProfileModule] Walker content element not found.");
                 return;
             }
 

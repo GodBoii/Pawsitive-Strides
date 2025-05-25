@@ -105,7 +105,6 @@
             _dogs = data || [];
             displayDogs();
         } catch (error) {
-            console.error('[OwnerProfileModule] Error fetching dogs:', error);
             if (_domElements.dogMessageElement) {
                 _domElements.dogMessageElement.textContent = `Error fetching dogs: ${error.message}`;
                 _domElements.dogMessageElement.className = 'dog-message ml-4 text-sm text-red-700'; // Themed error
@@ -178,7 +177,6 @@
             }, 3000);
 
         } catch (error) {
-            console.error("[OwnerProfileModule] Error adding dog:", error);
             _domElements.dogMessageElement.textContent = `Error: ${error.message}`;
             _domElements.dogMessageElement.className = 'dog-message ml-4 text-sm text-red-700'; // Themed error
         }
@@ -225,7 +223,6 @@
                 }, 3000);
 
             } catch (error) {
-                console.error('[OwnerProfileModule] Error removing dog:', error);
                 if (_domElements.dogMessageElement) {
                     _domElements.dogMessageElement.textContent = `Error removing dog: ${error.message}`;
                     _domElements.dogMessageElement.className = 'dog-message ml-4 text-sm text-red-700'; // Themed error
@@ -236,7 +233,6 @@
 
     function populateOwnerDetailsForm() {
         if (!_userProfileData || !_domElements.ownerDetailsForm) return;
-        console.log('[OwnerProfileModule] Populating owner details form with:', _userProfileData);
         
         const form = _domElements.ownerDetailsForm;
         form.querySelector('#emergency-contact-name').value = _userProfileData.emergency_contact_name || '';
@@ -263,7 +259,6 @@
             updated_at: new Date()
         };
 
-        console.log('[OwnerProfileModule] Sending owner details updates to Supabase:', updates);
         try {
             const { data: updatedProfile, error } = await _supabase
                 .from('profiles')
@@ -277,7 +272,6 @@
             _domElements.ownerDetailsMessageElement.textContent = 'Owner details updated successfully!';
             _domElements.ownerDetailsMessageElement.className = 'owner-details-message ml-4 text-sm text-emerald-700'; // Themed success
             _userProfileData = { ..._userProfileData, ...updatedProfile }; 
-            console.log("[OwnerProfileModule] Owner details updated locally:", _userProfileData);
 
             setTimeout(() => { // Clear success message
                 if (_domElements.ownerDetailsMessageElement && _domElements.ownerDetailsMessageElement.textContent === 'Owner details updated successfully!') {
@@ -286,7 +280,6 @@
             }, 3000);
             
         } catch (error) {
-            console.error("[OwnerProfileModule] Error updating owner details:", error);
             _domElements.ownerDetailsMessageElement.textContent = `Error: ${error.message}`;
             _domElements.ownerDetailsMessageElement.className = 'owner-details-message ml-4 text-sm text-red-700'; // Themed error
         }
@@ -299,13 +292,10 @@
             _userProfileData = profileData;
             _domElements = domRefs;
 
-            console.log('[OwnerProfileModule] Initialized with profile:', _userProfileData, 'and DOM:', _domElements);
-
             if (_domElements.ownerContentElement) {
                 // Content is displayed by default in HTML, so no need to toggle class here
                 // _domElements.ownerContentElement.classList.remove('hidden');
             } else {
-                console.error("[OwnerProfileModule] Owner content element not found.");
                 return;
             }
 

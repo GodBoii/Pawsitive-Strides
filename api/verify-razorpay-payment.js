@@ -69,8 +69,10 @@ export default async function handler(req, res) {
         .single();
 
       if (paymentInsertError) {
-        // Log but continue
-        console.error('Supabase payment record insert error:', paymentInsertError, 'for order:', razorpay_order_id);
+        return res.status(500).json({
+          success: false,
+          message: 'Failed to record payment in database'
+        });
       } else if (paymentInsertData) {
         paymentRecordId = paymentInsertData.id;
       }
@@ -122,4 +124,4 @@ export default async function handler(req, res) {
     });
     res.status(400).json({ status: 'error', error: 'Invalid signature.' });
   }
-} 
+}

@@ -4,25 +4,19 @@
     'use strict';
 
     document.addEventListener('DOMContentLoaded', async () => {
-        console.log('[OwnerDashboardMain] DOMContentLoaded');
-
         // Initialize Supabase Client
         const _supabase = window.pawsitiveCommon.createSupabaseClient();
         if (!_supabase) {
-            console.error("[OwnerDashboardMain] Supabase client could not be initialized. Dashboard cannot load.");
             const body = document.querySelector('body');
             if (body) body.innerHTML = '<p style="color: red; text-align: center; padding: 20px;">Error: Could not connect to services. Please try again later.</p>';
             return;
         }
-        console.log('[OwnerDashboardMain] Supabase client initialized.');
 
         // Authenticate User
         const currentUser = await window.pawsitiveCommon.requireAuth(_supabase, 'login.html');
         if (!currentUser) {
-            console.log("[OwnerDashboardMain] User not authenticated. Redirecting...");
             return;
         }
-        console.log('[OwnerDashboardMain] User authenticated:', currentUser.email);
 
         // Setup Logout
         window.pawsitiveCommon.setupLogout(_supabase);
@@ -45,7 +39,6 @@
         let userProfileData = null;
 
         function displayError(message) {
-            console.error('[OwnerDashboardMain] Error:', message);
             if (loadingState) loadingState.style.display = 'none';
             if (profileLoadErrorDiv) {
                 profileLoadErrorDiv.textContent = message;
@@ -68,12 +61,10 @@
                     if (targetSection) {
                         targetSection.classList.add('active');
                     } else {
-                        console.warn(`[OwnerDashboardMain] Target section #${targetSectionId} not found!`);
                         return;
                     }
 
                     if (targetSectionId === 'map-section' && App.Maps && App.Maps.onMapViewActivated) {
-                        console.log('[OwnerDashboardMain] Map section activated via sidebar.');
                         App.Maps.onMapViewActivated(userProfileData);
                     } else if (targetSectionId === 'quickride-section' && App.QuickRideOwner && App.QuickRideOwner.refreshMyRides) {
                         // Optional: Refresh quick rides when section is activated,
@@ -91,7 +82,6 @@
 
         function setupMobileSidebar() {
             if (!mobileMenuToggle || !mobileSidebar || !mobileOverlay || !closeMobileSidebarButton) {
-                console.warn("[OwnerDashboardMain] Mobile sidebar elements not found. Skipping setup.");
                 return;
             }
             function openMobileNav() {
@@ -118,14 +108,12 @@
         }
 
         async function initializeDashboard() {
-            console.log('[OwnerDashboardMain] Initializing dashboard...');
             if (loadingState) loadingState.style.display = 'block';
             if (mainContent) mainContent.classList.add('hidden');
             if (profileLoadErrorDiv) profileLoadErrorDiv.classList.add('hidden');
 
             try {
                 // 1. Fetch User Profile
-                console.log('[OwnerDashboardMain] Fetching user profile...');
                 const { data: profile, error: profileError } = await _supabase
                     .from('profiles')
                     .select('*, latitude, longitude')
@@ -135,11 +123,9 @@
                 if (profileError) throw profileError;
                 if (!profile) throw new Error("User profile not found.");
                 userProfileData = profile;
-                console.log('[OwnerDashboardMain] User profile fetched:', userProfileData);
 
                 // **** ROLE CHECK ****
                 if (userProfileData.role !== 'owner') {
-                    console.warn(`[OwnerDashboardMain] Incorrect role: ${userProfileData.role}. User is not an owner. Redirecting...`);
                     window.location.href = userProfileData.role === 'walker' ? 'walker-dashboard.html' : 'login.html';
                     return;
                 }
@@ -163,7 +149,6 @@
                     reverseGeocodeResultDiv: document.getElementById('reverse-geocode-result'),
                     profileMessageElement: document.querySelector('#profile-form .profile-message')
                 });
-                console.log('[OwnerDashboardMain] UserProfile module initialized.');
 
                 if (!App.ProfileModal || !App.ProfileModal.init) {
                     displayError("ProfileModal module not loaded."); return;
@@ -179,7 +164,6 @@
                     modalWalkerContent: document.getElementById('modal-walker-content'),
                     modalOwnerContent: document.getElementById('modal-owner-content')
                 });
-                console.log('[DashboardMain] ProfileModal module initialized.');
 
                 // Initialize OwnerProfile Module
                 if (!App.OwnerProfile || !App.OwnerProfile.init) {
@@ -194,7 +178,6 @@
                     ownerDetailsForm: document.getElementById('owner-details-form'),
                     ownerDetailsMessageElement: document.querySelector('#owner-details-form .owner-details-message')
                 });
-                console.log('[OwnerDashboardMain] OwnerProfile module initialized.');
 
                 // Maps Module
                 if (!App.Maps || !App.Maps.init) {
@@ -214,7 +197,6 @@
                     modalWalkerContent: document.getElementById('modal-walker-content'),
                     modalOwnerContent: document.getElementById('modal-owner-content')
                 });
-                console.log('[OwnerDashboardMain] Maps module initialized.');
 
                 // Initialize QuickRideOwner Module -- NEW --
                 if (!App.QuickRideOwner || !App.QuickRideOwner.init) {
@@ -233,7 +215,6 @@
                     submitQuickRideBtn: document.getElementById('submit-quickride-btn'),
                     cancelNewQuickRideBtn: document.getElementById('cancel-new-quickride-btn')
                 });
-                console.log('[OwnerDashboardMain] QuickRideOwner module initialized.');
 
 
                 // 3. Setup UI Interactions
@@ -243,7 +224,6 @@
                 // 4. Show Content
                 if (loadingState) loadingState.style.display = 'none';
                 if (mainContent) mainContent.classList.remove('hidden');
-                console.log('[OwnerDashboardMain] Dashboard initialization complete.');
 
                 const defaultActiveLink = document.querySelector('.sidebar-link[data-section="profile-section"]');
                 if (defaultActiveLink) defaultActiveLink.click();

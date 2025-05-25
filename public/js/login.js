@@ -3,13 +3,11 @@
 document.addEventListener('DOMContentLoaded', () => {
     // Initializing Supabase client
     const _supabase = window.pawsitiveCommon.createSupabaseClient();
-    console.log('Supabase Initialized (Login Page)');
 
     // Check if already logged in, if so, redirect based on role and check subscription
     (async () => {
         const user = await window.pawsitiveCommon.checkAuth(_supabase);
         if (user) {
-            console.log('User already logged in, determining role and subscription for redirect...');
             try {
                 const { data: profile, error: profileError } = await _supabase
                     .from('profiles')
@@ -18,13 +16,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     .single();
 
                 if (profileError || !profile) {
-                    console.error('Error fetching profile for already logged-in user:', profileError);
                     return; // Stay on login page or handle error appropriately
                 }
 
                 // **** REVISED EXPIRY/SETUP CHECK FOR ALREADY LOGGED-IN USERS ****
                 if (!profile.subscription_ends_at) {
-                    console.log('User session active, but subscription_ends_at is null. Redirecting to renewal/setup.');
                     const queryParams = new URLSearchParams({
                         userId: user.id,
                         email: user.email,
@@ -40,7 +36,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     const subscriptionEndDate = new Date(profile.subscription_ends_at);
                     const now = new Date();
                     if (subscriptionEndDate < now) {
-                        console.log('User session active, but subscription expired on:', subscriptionEndDate.toLocaleDateString());
                         const queryParams = new URLSearchParams({
                             userId: user.id,
                             email: user.email,
@@ -60,11 +55,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 } else if (profile.role === 'walker') {
                     window.location.href = 'walker-dashboard.html';
                 } else {
-                    console.warn('Unknown role for already logged-in user. Staying on login page.');
                     // window.location.href = 'index.html'; // Or a generic dashboard/error page
                 }
             } catch (e) {
-                console.error('Exception while checking auth/role/subscription for redirect:', e);
+                // Handle exception
             }
         }
     })();
@@ -94,7 +88,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
             if (authError) throw authError;
 
-            console.log('Login authentication successful:', authData);
             const loggedInUser = authData.user;
 
             if (loggedInUser) {
@@ -105,7 +98,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     .single();
 
                 if (profileError || !profile) {
-                    console.error('Error fetching profile details after login:', profileError);
                     errorMessage.textContent = 'Login successful, but could not load your profile details. Please try again or contact support.';
                     errorMessage.classList.remove('hidden');
                     // await _supabase.auth.signOut(); // Optionally sign out
@@ -114,13 +106,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
                     // **** REVISED EXPIRY/SETUP CHECK AFTER LOGIN ATTEMPT ****
                     if (!profile.subscription_ends_at) {
-                        console.log('Login successful, but subscription_ends_at is null. Redirecting to renewal/setup.');
                         let setupFlag = 'true_missing_date';
                         if (profile.subscription_status === 'pending_payment') {
                              errorMessage.innerHTML = `Your account is created but the initial subscription payment was not completed. Please <a href="renew-subscription.html?userId=${loggedInUser.id}&email=${loggedInUser.email}&role=${profile.role}&setup=true_pending&plan=${profile.plan || 'N/A'}" class="font-medium text-emerald-700 hover:underline">complete your subscription setup</a>.`;
                              errorMessage.classList.remove('hidden');
                              setupFlag = 'true_pending';
-                             // No immediate return here, let the redirect below handle it.
                         }
                         const queryParams = new URLSearchParams({
                             userId: loggedInUser.id,
@@ -136,7 +126,6 @@ document.addEventListener('DOMContentLoaded', () => {
                         const subscriptionEndDate = new Date(profile.subscription_ends_at);
                         const now = new Date();
                         if (subscriptionEndDate < now) {
-                            console.log('Login successful, but subscription expired on:', subscriptionEndDate.toLocaleDateString());
                             const queryParams = new URLSearchParams({
                                 userId: loggedInUser.id,
                                 email: loggedInUser.email,
@@ -156,7 +145,6 @@ document.addEventListener('DOMContentLoaded', () => {
                     } else if (profile.role === 'walker') {
                         window.location.href = 'walker-dashboard.html';
                     } else {
-                        console.error('Unknown user role after login:', profile.role);
                         errorMessage.textContent = 'Login successful, but your account type is unrecognized. Please contact support.';
                         errorMessage.classList.remove('hidden');
                         // Potentially sign out and redirect to index or show a more generic error.
@@ -166,13 +154,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             } else {
                 // This case should ideally not be reached if signInWithPassword was successful and returned data
-                console.error('User object not available in authData after successful login response.');
                 errorMessage.textContent = 'Login was successful, but there was an issue retrieving your session details. Please try again.';
                 errorMessage.classList.remove('hidden');
             }
 
         } catch (error) {
-            console.error('Login error:', error);
             if (error.message.includes("Email not confirmed")) {
                 errorMessage.innerHTML = `Login failed: Please verify your email address first. Check your inbox (and spam folder). If your subscription payment is pending or setup is incomplete, you'll be guided to resolve it after email verification.`;
             } else if (error.message.includes("Invalid login credentials")) {

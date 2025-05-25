@@ -32,7 +32,6 @@
 
     // Ensure pawsitiveCommon and its utilities are loaded
     if (!window.pawsitiveCommon || !window.pawsitiveCommon.createSafeElement || !window.pawsitiveCommon.sanitizeHTML) {
-        console.error("[mapsModule.js] pawsitiveCommon or its utilities not found. Module cannot function correctly.");
         App.Maps = { init: () => {}, onMapViewActivated: () => {} }; // Provide dummy functions
         return;
     }
@@ -58,23 +57,18 @@
             try {
                 callback();
             } catch (e) {
-                console.error("[MapsModule] Error executing ready callback immediately:", e);
             }
         } else {
             apiReadyCallbacks.push(callback);
-            console.log("[MapsModule] Queued callback. Current queue length:", apiReadyCallbacks.length);
         }
     }
 
     function _handleGoogleMapsApiLoadedAndTriggered() {
-        console.log("[MapsModule] _handleGoogleMapsApiLoadedAndTriggered called (via global initMap).");
         if (mapsApiReady) {
-            console.log("[MapsModule] API already marked as ready. Skipping re-initialization.");
             return;
         }
 
         if (typeof google === 'undefined' || !google.maps || !google.maps.Geocoder || !google.maps.places) {
-            console.error("[MapsModule] Google Maps objects not available even after global initMap! This is unexpected.");
             if (_domElements.mapContainer) {
                 _domElements.mapContainer.innerHTML = `<p class="map-loading-message text-red-600 p-4">Critical Error: Google Maps components failed to load. Try refreshing.</p>`;
             }
@@ -83,11 +77,8 @@
 
         try {
             geocoder = new google.maps.Geocoder();
-            console.log("[MapsModule] Geocoder initialized successfully.");
             mapsApiReady = true; // Mark our module's readiness
-            console.log("[MapsModule] mapsApiReady set to true. Processing queued callbacks.");
         } catch (e) {
-            console.error("[MapsModule] Error initializing Geocoder:", e);
             mapsApiReady = false; // Ensure it's false on error
             if (_domElements.mapContainer) {
                 _domElements.mapContainer.innerHTML = `<p class="map-loading-message text-red-600 p-4">Error initializing map services. Please refresh.</p>`;
@@ -98,16 +89,12 @@
         while (apiReadyCallbacks.length > 0) {
             const cb = apiReadyCallbacks.shift();
             try {
-                console.log("[MapsModule] Executing queued callback:", cb.name || "anonymous");
                 cb();
             } catch (e) {
-                console.error("[MapsModule] Error executing queued ready callback:", e, cb.name || "anonymous");
             }
         }
-        if (callbackCount > 0) console.log(`[MapsModule] Processed ${callbackCount} queued callbacks.`);
 
         if (_domElements.mapContainer && _domElements.mapContainer.closest('.content-section.active') && !mainMapInstance) {
-            console.log("[MapsModule] Main map view is active post-API ready, ensuring map initializes.");
             _initMainMapViewMap();
             if (mainMapInstance && !mainMapDataLoaded) {
                  _loadDataForMainMapView();
@@ -124,25 +111,20 @@
 
     async function _loadDataForMainMapView() {
         if (!mainMapInstance) {
-            console.warn("[MapsModule] Main map instance not ready for loading data. Attempting to initialize map first.");
             if (_domElements.mapContainer) _domElements.mapContainer.innerHTML = '<p class="map-loading-message">Map initializing, please wait...</p>';
             _initMainMapViewMap(); 
             if (!mainMapInstance) { 
-                console.error("[MapsModule] Failed to initialize main map instance for data loading.");
                 if (_domElements.mapContainer) _domElements.mapContainer.innerHTML = '<p class="map-loading-message text-red-500">Error: Map could not be initialized for data.</p>';
                 return;
             }
         }
         if (!_userProfileData) {
-            console.warn("[MapsModule] User profile data not available for loading map data.");
             if (_domElements.mapContainer) _domElements.mapContainer.innerHTML = '<p class="map-loading-message text-red-500">Your profile data is missing. Cannot load map.</p>';
             return;
         }
 
         mainMapDataLoaded = false; 
         _clearMainMapMarkers();
-        console.log("[MapsModule] Loading data for main map view. User:", _userProfileData.full_name);
-
         let mapLoadingMessage = _domElements.mapContainer.querySelector('.map-loading-message.map-overlay-message');
         if (!mapLoadingMessage) {
             mapLoadingMessage = createSafeElement('p', {
@@ -191,13 +173,10 @@
             search_radius_km: SEARCH_RADIUS_KM, target_role: targetRole,
             exclude_user_id: _currentUser.id
         };
-        console.log("[MapsModule] Calling RPC 'find_nearby_users' with params:", rpcParams);
-
         try {
             const { data: nearbyUsers, error: rpcError } = await _supabase.rpc('find_nearby_users', rpcParams);
             if (rpcError) throw rpcError;
 
-            console.log(`[MapsModule] RPC returned ${nearbyUsers?.length || 0} nearby ${targetRole}s.`);
             let plottedCount = 0;
             const infowindow = new google.maps.InfoWindow();
 
@@ -274,18 +253,15 @@
             }
 
         } catch (error) {
-            console.error("[MapsModule] Error calling RPC or plotting nearby users:", error);
             mapLoadingMessage.textContent = `Error loading map data: ${error.message}`;
             mapLoadingMessage.style.display = 'block'; 
         } finally {
             mainMapDataLoaded = true;
-            console.log("[MapsModule] Finished loading data for main map view.");
         }
     }
 
     function _initMainMapViewMap() {
         if (mainMapInstance) {
-            console.log("[MapsModule] _initMainMapViewMap called, but instance already exists. Ensuring resize.");
             if (google && _domElements.mapContainer.offsetHeight > 0) { 
                 google.maps.event.trigger(mainMapInstance, 'resize');
             }
@@ -293,12 +269,10 @@
         }
     
         if (!_domElements.mapContainer) {
-            console.error("[MapsModule] Main map container element not found for _initMainMapViewMap.");
             return;
         }
         _domElements.mapContainer.innerHTML = ''; 
         
-        console.log("[MapsModule] Attempting to create main map view instance.");
         try {
             mainMapInstance = new google.maps.Map(_domElements.mapContainer, {
                 center: INDIA_CENTER,
@@ -307,19 +281,15 @@
                 mapTypeControl: false,
                 streetViewControl: false,
             });
-            console.log("[MapsModule] Main map view instance CREATED.");
     
             requestAnimationFrame(() => { 
                 if (google && mainMapInstance && _domElements.mapContainer.offsetHeight > 0) {
                     google.maps.event.trigger(mainMapInstance, 'resize');
-                    console.log("[MapsModule] Resize triggered shortly after mainMapInstance creation.");
                 } else if (google && mainMapInstance) {
-                    console.warn("[MapsModule] Post-creation: mapContainer might not have dimensions yet. Resize might be ineffective now.");
                 }
             });
     
         } catch (error) {
-            console.error("[MapsModule] Error creating main map view instance:", error);
             if (_domElements.mapContainer) {
                 _domElements.mapContainer.innerHTML = `<p class="map-loading-message text-red-600 p-4">Could not initialize map: ${error.message}</p>`;
             }
@@ -328,7 +298,6 @@
     
     function _initLocationPickerMap(initialCoords, currentAddressText, callback) {
         if (!_domElements.pickerMapContainer) {
-            console.error("[MapsModule] Location picker map container not found.");
             if (_domElements.reverseGeocodeResultDiv) _domElements.reverseGeocodeResultDiv.textContent = "Picker map error.";
             return;
         }
@@ -338,7 +307,6 @@
 
         _whenGoogleMapsReady(() => { 
             if (!geocoder) {
-                console.error("[MapsModule] Geocoder not ready for picker map.");
                  _domElements.pickerMapContainer.innerHTML = `<p class="map-loading-message text-red-500 p-4">Map services error for picker.</p>`;
                 return;
             }
@@ -368,7 +336,6 @@
                     }
                      if (_domElements.reverseGeocodeResultDiv) _domElements.reverseGeocodeResultDiv.textContent = 'Drag marker or use address search.';
                 } catch(e) {
-                    console.error("[MapsModule] Error creating picker map instance:", e);
                     _domElements.pickerMapContainer.innerHTML = `<p class="map-loading-message text-red-500 p-4">Error loading picker: ${e.message}</p>`;
                 }
             };
@@ -399,7 +366,6 @@
                     const pickedLocation = { lat: latLng.lat(), lng: latLng.lng(), address: results[0].formatted_address };
                     if (currentPickerCallback) currentPickerCallback(pickedLocation);
                 } else {
-                    console.warn("[MapsModule] Reverse geocoding failed for picker:", status);
                     if (_domElements.reverseGeocodeResultDiv) _domElements.reverseGeocodeResultDiv.textContent = `Could not find address: ${status}`;
                     if (currentPickerCallback) currentPickerCallback({ lat: latLng.lat(), lng: latLng.lng(), address: null });
                 }
@@ -410,10 +376,8 @@
     async function _viewUserProfileInModal(userId, userRole, userName, userDistance) {
         if (!_domElements.userProfileModal || !_domElements.modalUserName || !_domElements.modalUserRole || !_domElements.modalUserDistance ||
             !_domElements.modalLoading || !_domElements.modalError || !_domElements.modalWalkerContent || !_domElements.modalOwnerContent) {
-            console.error("[MapsModule] One or more modal DOM elements are missing.");
             return;
         }
-        console.log(`[MapsModule] Viewing profile for modal: ${userRole} ${userName} (ID: ${userId})`);
 
         _domElements.modalUserName.textContent = sanitizeHTML(userName || 'User');
         _domElements.modalUserRole.textContent = userRole === 'owner' ? 'Pet Owner' : 'Dog Walker'; // This is already themed in HTML
@@ -444,7 +408,6 @@
             }
             _domElements.modalLoading.classList.add('hidden');
         } catch (error) {
-            console.error('[MapsModule] Error fetching profile for modal:', error);
             _domElements.modalLoading.classList.add('hidden');
             _domElements.modalError.classList.remove('hidden');
             const errorPEl = _domElements.modalError.querySelector('p');
@@ -454,7 +417,6 @@
     
     function _populateWalkerModalContent(profile, email) {
         if (!_domElements.modalWalkerContent) {
-            console.error("[MapsModule] modalWalkerContent DOM element is null.");
             return;
         }
         const el = (selector) => _domElements.modalWalkerContent.querySelector(selector);
@@ -494,7 +456,7 @@
                         }
                     });
                     if(!hasAvailability) availabilityDiv.textContent = 'Availability not specified.';
-                } catch (e) { availabilityDiv.textContent = 'Error loading availability.'; console.error("Error parsing walker availability for modal:", e); }
+                } catch (e) { availabilityDiv.textContent = 'Error loading availability.'; }
             } else {
                 availabilityDiv.textContent = 'Availability not specified.';
             }
@@ -504,7 +466,6 @@
     
     async function _populateOwnerModalContent(profile, email, ownerId) {
         if (!_domElements.modalOwnerContent) {
-            console.error("[MapsModule] modalOwnerContent DOM element is null.");
             return;
         }
         const el = (selector) => _domElements.modalOwnerContent.querySelector(selector);
@@ -555,7 +516,7 @@
                     noDogsMsg.textContent = 'No dogs listed by this owner.';
                 }
             } catch(e) {
-                dogsDiv.textContent = 'Error loading dog details.'; console.error("Error fetching dogs for modal:", e);
+                dogsDiv.textContent = 'Error loading dog details.';
             }
         }
         _domElements.modalOwnerContent.classList.remove('hidden');
@@ -570,7 +531,6 @@
             _userProfileData = profileData; 
             _domElements = domRefs;
 
-            console.log('[MapsModule] Initialized. User:', _userProfileData.full_name, 'DOM Refs:', _domElements);
             this.loadGoogleMapsApiKeyAndScript(); 
 
             if (_domElements.closeProfileModalButton && _domElements.userProfileModal) {
@@ -582,40 +542,30 @@
         },
 
         onMapViewActivated: function(updatedProfileData) {
-            console.log("[MapsModule] Map View Activated. Profile data passed:", updatedProfileData ? "Yes" : "No");
             if(updatedProfileData) _userProfileData = updatedProfileData;
 
             _whenGoogleMapsReady(() => {
-                console.log("[MapsModule] Google API ready for Map View Activation.");
                 if (!mainMapInstance) {
-                    console.log("[MapsModule] Main map instance doesn't exist, calling _initMainMapViewMap.");
                     _initMainMapViewMap();
                 } else {
-                    console.log("[MapsModule] Main map instance exists. Triggering resize.");
                      setTimeout(() => { 
                         if (google && mainMapInstance && _domElements.mapContainer.offsetHeight > 0) {
                             google.maps.event.trigger(mainMapInstance, 'resize');
-                            console.log("[MapsModule] Resize on existing mainMapInstance (onMapViewActivated).");
                         }
                     }, 50);
                 }
                 if (mainMapInstance && (!mainMapDataLoaded || (updatedProfileData && updatedProfileData.id !== _currentUser.id))) {
-                     console.log("[MapsModule] Conditions met, calling _loadDataForMainMapView.");
-                    _loadDataForMainMapView();
+                     _loadDataForMainMapView();
                 } else if(mainMapInstance) {
-                    console.log("[MapsModule] Map data already loaded or no new profile context to force reload.");
                 } else {
-                    console.warn("[MapsModule] Main map instance still not available after _init attempt in onMapViewActivated.");
                 }
             });
         },
         
         onUserProfileUpdated: function(updatedProfile) {
-            console.log("[MapsModule] User profile was updated. New profile data:", updatedProfile);
             _userProfileData = updatedProfile; 
             mainMapDataLoaded = false; 
             if (_domElements.mapContainer && _domElements.mapContainer.closest('.content-section.active')) {
-                 console.log("[MapsModule] Map view is active, reloading data due to profile update.");
                  _whenGoogleMapsReady(() => { 
                      if (mainMapInstance) _loadDataForMainMapView();
                  });
@@ -624,11 +574,9 @@
 
         loadGoogleMapsApiKeyAndScript: async function() {
             if (document.getElementById(MAPS_SCRIPT_ID) || mapsApiLoading) {
-                console.log("[MapsModule] Google Maps script already loaded or loading attempt in progress.");
                 return;
             }
             mapsApiLoading = true;
-            console.log("[MapsModule] Attempting to load Google Maps API Key and Script...");
 
             if (_domElements.mapContainer) {
                 const existingMsg = _domElements.mapContainer.querySelector('.map-loading-message');
@@ -651,7 +599,6 @@
                 const apiKey = data.apiKey;
                 if (!apiKey) throw new Error('API key not received.');
 
-                console.log("[MapsModule] API Key received.");
                 if (_domElements.mapContainer && _domElements.mapContainer.querySelector('.map-loading-message')) {
                      const loadingMsgEl = _domElements.mapContainer.querySelector('.map-loading-message');
                      if(loadingMsgEl) loadingMsgEl.textContent = 'Loading Google Maps...'; // Update message
@@ -665,15 +612,12 @@
                 
                 script.async = true; script.defer = true; 
                 script.onerror = () => { 
-                    console.error("[MapsModule] Google Maps script failed to load.");
                     if (_domElements.mapContainer) _domElements.mapContainer.innerHTML = '<p class="map-loading-message text-red-500 p-4">Error: Could not load Google Maps script.</p>';
                     mapsApiLoading = false;
                 };
                 document.head.appendChild(script);
-                console.log("[MapsModule] Google Maps script tag appended with callback 'initMap'.");
 
             } catch (error) { 
-                console.error("[MapsModule] Error in loadGoogleMapsApiKeyAndScript:", error);
                 if (_domElements.mapContainer) _domElements.mapContainer.innerHTML = `<p class="map-loading-message text-red-500 p-4">Error fetching map resources: ${error.message}</p>`;
                 mapsApiLoading = false;
             }
@@ -684,7 +628,6 @@
         initAddressAutocomplete: function(inputElement, onPlaceSelectedCallback) {
              _whenGoogleMapsReady(() => {
                 if (!google.maps.places || !google.maps.places.Autocomplete) { 
-                    console.error("[MapsModule] Google Places Autocomplete service not available.");
                     return;
                 }
                 if (addressAutocomplete) google.maps.event.clearInstanceListeners(addressAutocomplete); 
@@ -696,8 +639,7 @@
                         if (onPlaceSelectedCallback) onPlaceSelectedCallback(place); 
                     });
                     inputElement.addEventListener('keydown', (event) => { if (event.key === 'Enter') event.preventDefault(); });
-                    console.log("[MapsModule] Address Autocomplete initialized for:", inputElement.id);
-                } catch (e) { console.error("[MapsModule] Error initializing Autocomplete:", e); }
+                } catch (e) { }
             });
         },
 

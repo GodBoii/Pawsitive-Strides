@@ -17,7 +17,6 @@
 
     // Ensure pawsitiveCommon and its utilities are loaded
     if (!window.pawsitiveCommon || !window.pawsitiveCommon.createSafeElement || !window.pawsitiveCommon.sanitizeHTML) {
-        console.error("[QuickRideWalkerModule] pawsitiveCommon or its utilities not found.");
         App.QuickRideWalker = { init: () => {}, onViewActivated: () => {}, onViewDeactivated: () => {} };
         return;
     }
@@ -30,7 +29,6 @@
             const date = new Date(dateTimeString);
             return `${date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })} at ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}`;
         } catch (e) {
-            console.error("Error formatting date:", e);
             return dateTimeString;
         }
     }
@@ -226,7 +224,6 @@
             if (error) throw error;
             displayMyAcceptedRides(data);
         } catch (error) {
-            console.error('[QuickRideWalkerModule] Error fetching accepted rides:', error);
             _domElements.noAcceptedRidesMessage.textContent = `Error loading accepted rides: ${error.message}`;
             _domElements.noAcceptedRidesMessage.className = 'text-red-600 italic text-lg'; 
         }
@@ -251,7 +248,6 @@
             displayAvailableRides(data);
 
         } catch (error) {
-            console.error('[QuickRideWalkerModule] Error fetching available rides:', error);
             _domElements.availableRidesMessage.textContent = `Error fetching available rides: ${error.message}`;
             _domElements.availableRidesMessage.className = 'text-red-600 italic text-lg mb-4'; 
             _domElements.availableRidesMessage.classList.remove('hidden');
@@ -299,7 +295,6 @@
             fetchAvailableQuickRides(false); 
 
         } catch (error) {
-            console.error('[QuickRideWalkerModule] Error accepting ride:', error);
             if (_domElements.availableRidesMessage) {
                 _domElements.availableRidesMessage.textContent = `Error: ${error.message || 'Could not accept ride. It might have been taken.'}`;
                 _domElements.availableRidesMessage.className = 'text-red-600 italic text-lg mb-4'; 
@@ -350,7 +345,6 @@
             fetchMyAcceptedQuickRides(); // Refresh the list, completed ride will disappear. This function also sets the "no rides" message if needed.
 
         } catch (error) {
-            console.error('[QuickRideWalkerModule] Error completing ride:', error);
             if (messageArea) {
                 messageArea.textContent = `Error: ${error.message || 'Could not complete ride.'}`;
                 messageArea.className = 'text-red-600 italic text-lg mb-2';
@@ -369,14 +363,12 @@
         const distance = button.dataset.distance; 
 
         if (!ownerId) {
-            console.warn("[QuickRideWalkerModule] Owner ID not found on button.");
             return;
         }
         
         if (App.ProfileModal && App.ProfileModal.show) {
             App.ProfileModal.show(ownerId, 'owner', ownerName, distance);
         } else {
-            console.error("[QuickRideWalkerModule] App.ProfileModal.show function not found.");
             alert("Profile viewing feature is temporarily unavailable.");
         }
     }
@@ -387,48 +379,39 @@
             unsubscribeFromQuickRideChanges(); 
         }
 
-        console.log('[QuickRideWalkerModule] Subscribing to Quick Ride changes...');
         _realtimeChannel = _supabase.channel('public-quick-rides-feed')
             .on('postgres_changes', 
                 { event: '*', schema: 'public', table: 'quick_rides' }, 
                 (payload) => {
-                    console.log('[QuickRideWalkerModule] Realtime Quick Ride Change:', payload);
-                    
                     // Refresh available rides if a new ride is inserted or an existing one becomes pending
                     if (payload.eventType === 'INSERT' || 
                        (payload.eventType === 'UPDATE' && payload.old && 
                            (payload.old.status === 'pending_acceptance' || payload.new.status === 'pending_acceptance')
                        )) {
-                        console.log('[QuickRideWalkerModule] Relevant change detected, refreshing available rides.');
                         fetchAvailableQuickRides(false); 
                     }
                      // Refresh accepted rides if a ride current user accepted is updated (e.g. cancelled by owner, or completed by self via another tab/device)
                     if (payload.eventType === 'UPDATE' && payload.new && payload.new.accepted_walker_id === _currentUser.id) {
-                        console.log('[QuickRideWalkerModule] Change detected for one of my accepted/completed rides, refreshing my list.');
                         fetchMyAcceptedQuickRides();
                     }
                     // Also, if a ride is deleted that might have been in the accepted list
                     if (payload.eventType === 'DELETE' && payload.old && payload.old.accepted_walker_id === _currentUser.id) {
-                        console.log('[QuickRideWalkerModule] An accepted ride was deleted, refreshing my list.');
                         fetchMyAcceptedQuickRides();
                     }
                 }
             )
             .subscribe((status, err) => {
                 if (status === 'SUBSCRIBED') {
-                    console.log('[QuickRideWalkerModule] Successfully subscribed to Quick Rides feed!');
                 } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-                    console.error(`[QuickRideWalkerModule] Realtime subscription error: ${status}`, err);
+                    showError('Error subscribing to real-time updates');
                 }
             });
     }
 
     function unsubscribeFromQuickRideChanges() {
         if (_realtimeChannel) {
-            console.log('[QuickRideWalkerModule] Unsubscribing from Quick Ride changes...');
             _supabase.removeChannel(_realtimeChannel)
-                .then(status => console.log('[QuickRideWalkerModule] Unsubscribe status:', status))
-                .catch(err => console.error('[QuickRideWalkerModule] Error unsubscribing:', err));
+                .catch(err => {});
             _realtimeChannel = null;
         }
     }
@@ -441,10 +424,8 @@
             _userProfileData = profileData;
             _domElements = domRefs; 
 
-            console.log('[QuickRideWalkerModule] Initialized with profile:', _userProfileData ? _userProfileData.full_name : 'N/A');
-
             if (!_domElements.availableRidesListDiv || !_domElements.myAcceptedRidesListDiv) {
-                 console.warn("[QuickRideWalkerModule] Essential DOM elements for QuickRideWalker not found.");
+                 return null;
             }
 
             if (_domElements.refreshBtn) {
@@ -474,9 +455,7 @@
             }
         },
         onViewActivated: function() {
-            console.log('[QuickRideWalkerModule] View Activated.');
             if(!_userProfileData || !_userProfileData.latitude || !_userProfileData.longitude) {
-                console.warn("[QuickRideWalkerModule] Walker location data missing from profile. Fetching available rides might fail or be inaccurate.");
                 if(_domElements.availableRidesMessage) {
                     _domElements.availableRidesMessage.textContent = 'Your location is not set in your profile. Please update your address to see nearby rides.';
                     _domElements.availableRidesMessage.classList.remove('hidden');
@@ -488,7 +467,6 @@
             subscribeToQuickRideChanges();
         },
         onViewDeactivated: function() {
-            console.log('[QuickRideWalkerModule] View Deactivated.');
             unsubscribeFromQuickRideChanges();
         }
     };

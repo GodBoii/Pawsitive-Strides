@@ -3,7 +3,6 @@
 document.addEventListener('DOMContentLoaded', () => {
     const _supabase = window.pawsitiveCommon.createSupabaseClient();
     if (!_supabase) {
-        console.error("Supabase client not initialized. Renewal page may not function correctly.");
         const errEl = document.getElementById('renewal-error-message');
         if (errEl) {
             errEl.textContent = 'Critical error: Services not available. Please try again later.';
@@ -12,7 +11,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
         return;
     }
-    console.log('Supabase Initialized (Renew Subscription Page)');
 
     const urlParams = new URLSearchParams(window.location.search);
     const userId = urlParams.get('userId');
@@ -172,7 +170,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 // === End Payment Bypass ===
             } catch (error) {
-                console.error('Renewal/Activation Error:', error);
                 errorMessageEl.textContent = error.message || 'An unexpected error occurred during renewal.';
                 errorMessageEl.classList.remove('hidden');
                 successMessageEl.classList.add('hidden');

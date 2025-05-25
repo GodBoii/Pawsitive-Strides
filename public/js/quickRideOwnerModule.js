@@ -12,7 +12,6 @@
     };
 
     if (!window.pawsitiveCommon || !window.pawsitiveCommon.createSafeElement || !window.pawsitiveCommon.sanitizeHTML) {
-        console.error("[QuickRideOwnerModule] pawsitiveCommon or its utilities not found.");
         App.QuickRideOwner = { init: () => {}, refreshMyRides: () => {} };
         return;
     }
@@ -25,7 +24,6 @@
             const date = new Date(dateTimeString);
             return `${date.toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })} at ${date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', hour12: true })}`;
         } catch (e) {
-            console.error("Error formatting date:", e);
             return dateTimeString;
         }
     }
@@ -46,7 +44,6 @@
 
     function displayMyRides(rides) {
         if (!_domElements.myRidesListDiv || !_domElements.noMyRidesMessage) {
-            console.error("[QuickRideOwnerModule] Rides list or no rides message element not found.");
             return;
         }
         _domElements.myRidesListDiv.innerHTML = '';
@@ -203,7 +200,6 @@
             displayMyRides(data);
 
         } catch (error) {
-            console.error('[QuickRideOwnerModule] Error fetching my rides:', error);
             if (_domElements.noMyRidesMessage) {
                  _domElements.noMyRidesMessage.textContent = `Error loading rides: ${error.message}`;
                  _domElements.noMyRidesMessage.style.color = 'red'; 
@@ -227,7 +223,6 @@
             if (error) throw error;
             _ownerDogs = data || [];
         } catch (error) {
-            console.error('[QuickRideOwnerModule] Error fetching owner dogs:', error);
             _ownerDogs = [];
         }
     }
@@ -298,7 +293,6 @@
             }, 3000);
 
         } catch (error) {
-            console.error('[QuickRideOwnerModule] Error posting Quick Ride:', error);
             _domElements.formMessage.textContent = `Error: ${error.message || 'Could not post ride.'}`;
             _domElements.formMessage.className = 'quickride-form-message ml-4 text-sm text-red-700 border border-red-300 bg-red-50 p-2 rounded-md';
         } finally {
@@ -340,7 +334,6 @@
             }, 3000);
 
         } catch (error) {
-            console.error('[QuickRideOwnerModule] Error cancelling ride:', error);
             if (_domElements.formMessage) {
                 _domElements.formMessage.textContent = `Error cancelling ride: ${error.message}`;
                 _domElements.formMessage.className = 'quickride-form-message ml-4 text-sm text-red-700 border border-red-300 bg-red-50 p-2 rounded-md';
@@ -357,14 +350,12 @@
         const walkerName = button.dataset.walkerName;
 
         if (!walkerId) {
-            console.warn("[QuickRideOwnerModule] Walker ID not found on button.");
             return;
         }
 
         if (App.ProfileModal && App.ProfileModal.show) {
             App.ProfileModal.show(walkerId, 'walker', walkerName, null);
         } else {
-            console.error("[QuickRideOwnerModule] App.ProfileModal.show function not found.");
             alert("Profile viewing feature is temporarily unavailable.");
         }
     }
@@ -419,9 +410,8 @@
             _domElements = domRefs;
 
             if (!_domElements.myRidesListDiv || !_domElements.newRideBtn || !_domElements.newRideForm) {
-                console.warn("[QuickRideOwnerModule] Essential DOM elements for QuickRideOwner not found.");
+                return;
             }
-            console.log('[QuickRideOwnerModule] Initialized.');
 
             if (_domElements.newRideBtn) {
                 _domElements.newRideBtn.addEventListener('click', () => toggleNewRideForm(true));

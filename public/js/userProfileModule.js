@@ -12,7 +12,6 @@
     function populateForm() {
         if (!_userProfileData || !_domElements.profileForm) return;
 
-        console.log('[UserProfileModule] Populating basic profile form with:', _userProfileData);
         if (_domElements.profileNameInput) _domElements.profileNameInput.value = _userProfileData.full_name || '';
         if (_domElements.profileEmailInput) _domElements.profileEmailInput.value = _currentUser.email || ''; // Email is from auth
         if (_domElements.profileMobileInput) _domElements.profileMobileInput.value = _userProfileData.mobile || '';
@@ -58,11 +57,6 @@
                  // Address text changed, but no map selection, so we need to geocode this new address
                  // This case is more complex: ideally, we'd prompt the user to pin or verify the new text address
                  // For now, let's assume MapsModule.geocodeAddress is available or we clear coords
-                 console.warn("[UserProfileModule] Address text changed without map selection. Coordinates might become stale or be cleared.");
-                 // If App.Maps.geocodeAddress exists:
-                 // const geocoded = await App.Maps.geocodeAddress(updates.address);
-                 // if (geocoded) { updates.latitude = geocoded.lat; updates.longitude = geocoded.lng; } 
-                 // else { updates.latitude = null; updates.longitude = null; }
                  // For simplicity now, if address text changed and no map selection, we'll just save text address
                  // and userProfileData's lat/lng will be updated to what's in the DB after save
                  // Or, to be safer and ensure data integrity:
@@ -71,8 +65,6 @@
             }
         }
         
-        console.log('[UserProfileModule] Sending basic info updates to Supabase:', updates);
-
         try {
             const { data: updatedProfile, error } = await _supabase
                 .from('profiles')
@@ -86,7 +78,6 @@
             _domElements.profileMessageElement.textContent = 'Profile updated successfully!';
             _domElements.profileMessageElement.style.color = 'green';
             _userProfileData = updatedProfile; // Update local cache
-            console.log("[UserProfileModule] Profile updated locally:", _userProfileData);
             
             populateForm(); // Re-populate to clear messages and reflect new state
             
@@ -101,14 +92,12 @@
 
 
         } catch (error) {
-            console.error("[UserProfileModule] Error updating profile:", error);
             _domElements.profileMessageElement.textContent = `Error: ${error.message}`;
             _domElements.profileMessageElement.style.color = 'red';
         }
     }
 
     function handlePinLocationClick() {
-        console.log("[UserProfileModule] Pin Location button clicked.");
         if (App.Maps && App.Maps.showLocationPicker) {
             // Pass current address value, and a callback for when location is picked
             const currentAddress = _domElements.profileAddressInput ? _domElements.profileAddressInput.value : null;
@@ -120,7 +109,6 @@
                 initialCoords,
                 currentAddress, // To pre-fill or center map
                 (locationData) => { // This is the callback
-                    console.log("[UserProfileModule] Location picked via map:", locationData);
                     _selectedLocationByMap = locationData; // Store it
                     if (_domElements.profileAddressInput && locationData.address) {
                         _domElements.profileAddressInput.value = locationData.address;
@@ -134,7 +122,6 @@
                 }
             );
         } else {
-            console.error("[UserProfileModule] Maps module or showLocationPicker not available.");
             if (_domElements.reverseGeocodeResultDiv) _domElements.reverseGeocodeResultDiv.textContent = "Map feature not available.";
         }
     }
@@ -147,10 +134,8 @@
             _userProfileData = profileData;
             _domElements = domRefs;
 
-            console.log('[UserProfileModule] Initialized with profile:', _userProfileData, 'and DOM:', _domElements);
             
             if (!_domElements.profileForm) {
-                console.error("[UserProfileModule] Profile form element not found. Cannot initialize.");
                 return;
             }
 
@@ -167,7 +152,6 @@
                 App.Maps.initAddressAutocomplete(
                     _domElements.profileAddressInput,
                     (placeData) => { // Callback when a place is selected
-                        console.log("[UserProfileModule] Address autocompleted:", placeData);
                         _selectedLocationByMap = {
                             lat: placeData.geometry.location.lat(),
                             lng: placeData.geometry.location.lng(),

@@ -4,25 +4,20 @@
     'use strict';
 
     document.addEventListener('DOMContentLoaded', async () => {
-        console.log('[WalkerDashboardMain] DOMContentLoaded');
 
         // Initialize Supabase Client
         const _supabase = window.pawsitiveCommon.createSupabaseClient();
         if (!_supabase) {
-            console.error("[WalkerDashboardMain] Supabase client could not be initialized. Dashboard cannot load.");
             const body = document.querySelector('body');
             if (body) body.innerHTML = '<p style="color: red; text-align: center; padding: 20px;">Error: Could not connect to services. Please try again later.</p>';
             return;
         }
-        console.log('[WalkerDashboardMain] Supabase client initialized.');
 
         // Authenticate User
         const currentUser = await window.pawsitiveCommon.requireAuth(_supabase, 'login.html');
         if (!currentUser) {
-            console.log("[WalkerDashboardMain] User not authenticated. Redirecting...");
             return;
         }
-        console.log('[WalkerDashboardMain] User authenticated:', currentUser.email);
 
         // Setup Logout
         window.pawsitiveCommon.setupLogout(_supabase);
@@ -46,7 +41,6 @@
         let currentActiveSectionId = null; // To track the currently active section
 
         function displayError(message) {
-            console.error('[WalkerDashboardMain] Error:', message);
             if (loadingState) loadingState.style.display = 'none';
             if (profileLoadErrorDiv) {
                 profileLoadErrorDiv.textContent = message;
@@ -99,7 +93,6 @@
                     if (targetSection) {
                         targetSection.classList.add('active');
                     } else {
-                        console.warn(`[WalkerDashboardMain] Target section #${targetSectionId} not found!`);
                         return;
                     }
 
@@ -108,7 +101,6 @@
 
 
                     if (targetSectionId === 'map-section' && App.Maps && App.Maps.onMapViewActivated) {
-                        console.log('[WalkerDashboardMain] Map section activated via sidebar.');
                         App.Maps.onMapViewActivated(userProfileData);
                     }
 
@@ -121,7 +113,6 @@
 
         function setupMobileSidebar() {
             if (!mobileMenuToggle || !mobileSidebar || !mobileOverlay || !closeMobileSidebarButton) {
-                console.warn("[WalkerDashboardMain] Mobile sidebar elements not found. Skipping setup.");
                 return;
             }
             function openMobileNav() {
@@ -146,14 +137,12 @@
         }
 
         async function initializeDashboard() {
-            console.log('[WalkerDashboardMain] Initializing dashboard...');
             if (loadingState) loadingState.style.display = 'block';
             if (mainContent) mainContent.classList.add('hidden');
             if (profileLoadErrorDiv) profileLoadErrorDiv.classList.add('hidden');
 
             try {
                 // 1. Fetch User Profile
-                console.log('[WalkerDashboardMain] Fetching user profile...');
                 const { data: profile, error: profileError } = await _supabase
                     .from('profiles')
                     .select('*, latitude, longitude') // Ensure latitude and longitude are fetched
@@ -163,11 +152,9 @@
                 if (profileError) throw profileError;
                 if (!profile) throw new Error("User profile not found.");
                 userProfileData = profile;
-                console.log('[WalkerDashboardMain] User profile fetched:', userProfileData);
 
                 // **** ROLE CHECK ****
                 if (userProfileData.role !== 'walker') {
-                    console.warn(`[WalkerDashboardMain] Incorrect role: ${userProfileData.role}. User is not a walker. Redirecting...`);
                     window.location.href = userProfileData.role === 'owner' ? 'owner-dashboard.html' : 'login.html';
                     return;
                 }
@@ -191,7 +178,6 @@
                     reverseGeocodeResultDiv: document.getElementById('reverse-geocode-result'),
                     profileMessageElement: document.querySelector('#profile-form .profile-message')
                 });
-                console.log('[WalkerDashboardMain] UserProfile module initialized.');
 
                 // Initialize WalkerProfile Module
                 if (!App.WalkerProfile || !App.WalkerProfile.init) {
@@ -208,7 +194,6 @@
                     walkerRecurringAvailCheckbox: document.getElementById('recurring-availability'),
                     walkerMessageElement: document.querySelector('#walker-details-form .walker-message')
                 });
-                console.log('[WalkerDashboardMain] WalkerProfile module initialized.');
 
                 // Maps Module
                 if (!App.Maps || !App.Maps.init) {
@@ -228,7 +213,6 @@
                     modalWalkerContent: document.getElementById('modal-walker-content'),
                     modalOwnerContent: document.getElementById('modal-owner-content')
                 });
-                console.log('[WalkerDashboardMain] Maps module initialized.');
 
                 if (!App.ProfileModal || !App.ProfileModal.init) {
                     displayError("ProfileModal module not loaded."); return;
@@ -244,7 +228,6 @@
                     modalWalkerContent: document.getElementById('modal-walker-content'),
                     modalOwnerContent: document.getElementById('modal-owner-content')
                 });
-                console.log('[DashboardMain] ProfileModal module initialized.');
 
                 // Initialize QuickRideWalker Module -- NEW --
                 if (!App.QuickRideWalker || !App.QuickRideWalker.init) {
@@ -258,7 +241,6 @@
                     refreshBtn: document.getElementById('refresh-available-rides-btn'),
                     refreshSpinner: document.getElementById('refresh-spinner')
                 });
-                console.log('[WalkerDashboardMain] QuickRideWalker module initialized.');
 
 
                 // 3. Setup UI Interactions
@@ -268,7 +250,6 @@
                 // 4. Show Content
                 if (loadingState) loadingState.style.display = 'none';
                 if (mainContent) mainContent.classList.remove('hidden');
-                console.log('[WalkerDashboardMain] Dashboard initialization complete.');
 
                 // Activate the default section (e.g., profile) and its module logic
                 const defaultActiveLink = document.querySelector('.sidebar-link[data-section="profile-section"]');
